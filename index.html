@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dementia Early Detection System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Mobile-first design */
+        .app-container {
+            max-width: 420px;
+            margin: 0 auto;
+            background: #ffffff;
+            min-height: 100vh;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Status bar */
+        .status-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-time {
+            font-weight: 600;
+        }
+
+        .status-icons {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* App header */
+        .app-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 20px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .app-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .app-header p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .monitoring-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* Dashboard cards */
+        .dashboard {
+            padding: 20px;
+            margin-top: -15px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .icon-purple {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .icon-blue {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .icon-green {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .icon-red {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        /* Chart canvas */
+        .chart-container {
+            margin: 16px 0;
+            position: relative;
+            height: 200px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Location list */
+        .location-list {
+            max-height: 220px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+
+        .location-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .location-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .location-item:hover {
+            background: #f3f4f6;
+            transform: translateX(4px);
+        }
+
+        .location-number {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .location-details {
+            flex: 1;
+        }
+
+        .location-time {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .location-coords {
+            font-size: 11px;
+            color: #6b7280;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Alert card */
+        .alert-card {
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            display: none;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-card.show {
+            display: block;
+        }
+
+        .alert-normal {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 2px solid #6ee7b7;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #fbbf24;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+            border: 2px solid #f87171;
+        }
+
+        .alert-icon {
+            font-size: 40px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .alert-title {
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+            color: #1f2937;
+        }
+
+        .alert-message {
+            font-size: 14px;
+            text-align: center;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        .alert-meta {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        /* Action button */
+        .action-button {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        .action-button:disabled {
+            background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .button-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Learning progress */
+        .learning-progress {
+            margin: 16px 0;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* History timeline */
+        .history-timeline {
+            margin-top: 16px;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 36px;
+            width: 2px;
+            height: calc(100% + 16px);
+            background: #e5e7eb;
+        }
+
+        .timeline-item:last-child::before {
+            display: none;
+        }
+
+        .timeline-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            z-index: 1;
+        }
+
+        .timeline-dot.normal {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .timeline-dot.anomaly {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .timeline-content {
+            flex: 1;
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .timeline-date {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .timeline-status {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #9ca3af;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Scrollbar styling */
+        .location-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .location-list::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 10px;
+        }
+
+        .location-list::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px;
+        }
+
+        .location-list::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-danger {
+            background: #fecaca;
+            color: #991b1b;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span class="status-time" id="statusTime">9:41</span>
+            <div class="status-icons">
+                <span>📶</span>
+                <span>📡</span>
+                <span>🔋</span>
+            </div>
+        </div>
+
+        <!-- App Header -->
+        <div class="app-header">
+            <div class="monitoring-badge">
+                <span class="pulse-dot"></span>
+                <span>MONITORING</span>
+            </div>
+            <h1>DD-Beta</h1>
+            <p>AI-Powered Behavioral Analysis System</p>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="dashboard">
+            <!-- Alert Card -->
+            <div class="alert-card" id="alertCard">
+                <div class="alert-icon" id="alertIcon">✓</div>
+                <div class="alert-title" id="alertTitle">Status Unknown</div>
+                <div class="alert-message" id="alertMessage">Run analysis to check behavioral patterns</div>
+                <div class="alert-meta" id="alertMeta"></div>
+            </div>
+
+            <!-- Statistics Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-purple">📊</div>
+                        <span>Analysis Overview</span>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalDays">0</div>
+                        <div class="stat-label">Days Tracked</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="accuracy">0%</div>
+                        <div class="stat-label">Accuracy</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="anomalyCount">0</div>
+                        <div class="stat-label">Anomalies</div>
+                    </div>
+                </div>
+                
+                <div class="learning-progress">
+                    <div class="progress-label">
+                        <span>Learning Progress</span>
+                        <span id="learningPercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deviation Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-blue">📈</div>
+                        <span>Deviation Trends</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="deviationChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Tabs for Data Views -->
+            <div class="card">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab(0)">📍 Today</button>
+                    <button class="tab" onclick="switchTab(1)">🎯 Baseline</button>
+                    <button class="tab" onclick="switchTab(2)">📜 History</button>
+                </div>
+
+                <!-- Tab Content 0: Today's Data -->
+                <div class="tab-content active" id="tabToday">
+                    <div class="location-list" id="todayList">
+                        <div class="empty-state">
+                            <div class="empty-icon">📍</div>
+                            <div class="empty-text">No movement data yet<br>Start monitoring to track locations</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content 1: Baseline Data -->
+                <div class="tab-content" id="tabBaseline">
+                    <div class="location-list" id="baselineList"></div>
+                </div>
+
+                <!-- Tab Content 2: History -->
+                <div class="tab-content" id="tabHistory">
+                    <div class="history-timeline" id="historyTimeline">
+                        <div class="empty-state">
+                            <div class="empty-icon">📜</div>
+                            <div class="empty-text">No history available<br>Analysis results will appear here</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <button class="action-button" id="analyzeBtn" onclick="runAnalysis()">
+                <span>🚀</span>
+                <span id="btnText">Start Daily Analysis</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let state = {
+            baselinePattern: [],
+            todayPattern: [],
+            history: [],
+            totalDays: 0,
+            anomalyCount: 0,
+            deviationHistory: [],
+            isLearning: true,
+            learningProgress: 0
+        };
+
+        // Manila coordinates
+        const MANILA_LAT = 14.5995;
+        const MANILA_LNG = 120.9842;
+        const COORD_VARIANCE = 0.05;
+
+        // Chart context
+        let chartCanvas = null;
+        let chartCtx = null;
+
+        /**
+         * Initialize app
+         */
+        function init() {
+            updateStatusTime();
+            setInterval(updateStatusTime, 1000);
+            
+            generateBaseline();
+            displayPattern(state.baselinePattern, 'baselineList');
+            
+            // Initialize chart
+            chartCanvas = document.getElementById('deviationChart');
+            chartCtx = chartCanvas.getContext('2d');
+            resizeChart();
+            drawChart();
+            
+            window.addEventListener('resize', () => {
+                resizeChart();
+                drawChart();
+            });
+            
+            // Load saved state
+            loadState();
+        }
+
+        /**
+         * Update status bar time
+         */
+        function updateStatusTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('statusTime').textContent = `${hours}:${minutes}`;
+        }
+
+        /**
+         * Generate GPS coordinate
+         */
+        function generateCoordinate() {
+            const lat = MANILA_LAT + (Math.random() - 0.5) * COORD_VARIANCE;
+            const lng = MANILA_LNG + (Math.random() - 0.5) * COORD_VARIANCE;
+            const hours = Math.floor(Math.random() * 12) + 7;
+            const minutes = Math.floor(Math.random() * 60);
+            return {
+                lat: parseFloat(lat.toFixed(6)),
+                lng: parseFloat(lng.toFixed(6)),
+                time: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+            };
+        }
+
+        /**
+         * Generate baseline pattern
+         */
+        function generateBaseline() {
+            state.baselinePattern = [];
+            for (let i = 0; i < 7; i++) {
+                state.baselinePattern.push(generateCoordinate());
+            }
+        }
+
+        /**
+         * Generate today's pattern with adaptive anomaly generation
+         */
+        function generateTodayPattern() {
+            state.todayPattern = [];
+            
+            // Adaptive anomaly probability based on learning progress
+            const baseAnomalyChance = 0.35;
+            const learningBonus = state.learningProgress * 0.1;
+            const shouldHaveAnomaly = Math.random() < (baseAnomalyChance - learningBonus);
+            
+            if (shouldHaveAnomaly) {
+                const anomalyType = Math.floor(Math.random() * 3);
+                
+                if (anomalyType === 0) {
+                    // Different number of stops
+                    const stopCount = Math.random() < 0.5 ? 4 : 10;
+                    for (let i = 0; i < stopCount; i++) {
+                        state.todayPattern.push(generateCoordinate());
+                    }
+                } else if (anomalyType === 1) {
+                    // Far away locations
+                    for (let i = 0; i < 7; i++) {
+                        const coord = generateCoordinate();
+                        if (i === 2 || i === 4 || i === 6) {
+                            coord.lat += (Math.random() - 0.5) * 0.2;
+                            coord.lng += (Math.random() - 0.5) * 0.2;
+                        }
+                        state.todayPattern.push(coord);
+                    }
+                } else {
+                    // Route drastically changed
+                    for (let i = 0; i < 7; i++) {
+                        const coord = generateCoordinate();
+                        coord.lat += (Math.random() - 0.5) * 0.15;
+                        coord.lng += (Math.random() - 0.5) * 0.15;
+                        state.todayPattern.push(coord);
+                    }
+                }
+            } else {
+                // Normal pattern
+                for (let i = 0; i < 7; i++) {
+                    const baseCoord = state.baselinePattern[i];
+                    state.todayPattern.push({
+                        lat: parseFloat((baseCoord.lat + (Math.random() - 0.5) * 0.01).toFixed(6)),
+                        lng: parseFloat((baseCoord.lng + (Math.random() - 0.5) * 0.01).toFixed(6)),
+                        time: generateTime()
+                    });
+                }
+            }
+        }
+
+        /**
+         * Generate time
+         */
+        function generateTime() {
+            const hours = Math.floor(Math.random() * 12) + 7;
+            const minutes = Math.floor(Math.random() * 60);
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+
+        /**
+         * Calculate distance using Haversine formula
+         */
+        function calculateDistance(coord1, coord2) {
+            const R = 6371;
+            const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
+            const dLng = (coord2.lng - coord1.lng) * Math.PI / 180;
+            
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(coord1.lat * Math.PI / 180) * Math.cos(coord2.lat * Math.PI / 180) *
+                      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        /**
+         * Enhanced anomaly detection with learning
+         */
+        function detectAnomaly() {
+            let totalDistanceDeviation = 0;
+            let largeDeviations = 0;
+            const stopCountDiff = Math.abs(state.todayPattern.length - state.baselinePattern.length);
+            
+            const minLength = Math.min(state.baselinePattern.length, state.todayPattern.length);
+            for (let i = 0; i < minLength; i++) {
+                const distance = calculateDistance(state.baselinePattern[i], state.todayPattern[i]);
+                totalDistanceDeviation += distance;
+                if (distance > 3) {
+                    largeDeviations++;
+                }
+            }
+            
+            const avgDeviation = totalDistanceDeviation / minLength;
+            
+            // Adaptive thresholds based on learning progress
+            const distanceThreshold = 5 - (state.learningProgress * 1.5);
+            const deviationThreshold = 2 - Math.floor(state.learningProgress * 0.5);
+            const stopThreshold = 3 - Math.floor(state.learningProgress * 0.3);
+            
+            const isAnomaly = avgDeviation > distanceThreshold || 
+                             largeDeviations >= deviationThreshold || 
+                             stopCountDiff >= stopThreshold;
+            
+            // Store deviation data
+            state.deviationHistory.push({
+                day: state.totalDays + 1,
+                deviation: avgDeviation,
+                isAnomaly: isAnomaly
+            });
+            
+            // Keep only last 14 days
+            if (state.deviationHistory.length > 14) {
+                state.deviationHistory.shift();
+            }
+            
+            return {
+                isAnomaly,
+                avgDeviation,
+                largeDeviations,
+                stopCountDiff
+            };
+        }
+
+        /**
+         * Display pattern in list
+         */
+        function displayPattern(pattern, elementId) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            
+            pattern.forEach((coord, index) => {
+                const item = document.createElement('div');
+                item.className = 'location-item';
+                item.innerHTML = `
+                    <div class="location-number">${index + 1}</div>
+                    <div class="location-details">
+                        <div class="location-time">🕐 ${coord.time}</div>
+                        <div class="location-coords">📍 ${coord.lat}, ${coord.lng}</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        /**
+         * Display alert
+         */
+        function displayAlert(result) {
+            const alertCard = document.getElementById('alertCard');
+            const alertIcon = document.getElementById('alertIcon');
+            const alertTitle = document.getElementById('alertTitle');
+            const alertMessage = document.getElementById('alertMessage');
+            const alertMeta = document.getElementById('alertMeta');
+            
+            alertCard.classList.remove('alert-normal', 'alert-warning', 'alert-danger');
+            alertCard.classList.add('show');
+            
+            const timestamp = new Date().toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            if (result.isAnomaly) {
+                alertCard.classList.add('alert-danger');
+                alertIcon.textContent = '⚠️';
+                alertTitle.textContent = 'Anomaly Detected';
+                alertMessage.innerHTML = `Significant behavioral deviation detected. Average deviation: <strong>${result.avgDeviation.toFixed(2)} km</strong><br>Family notification would be sent via LINE API.`;
+                alertMeta.innerHTML = `🔔 Alert triggered at ${timestamp}<br>📊 Confidence: ${Math.min(95, 70 + state.learningProgress * 5).toFixed(0)}%`;
+                
+                state.anomalyCount++;
+            } else {
+                alertCard.classList.add('alert-normal');
+                alertIcon.textContent = '✅';
+                alertTitle.textContent = 'Behavior Normal';
+                alertMessage.innerHTML = `Movement patterns are within expected parameters. Average deviation: <strong>${result.avgDeviation.toFixed(2)} km</strong><br>No alerts necessary.`;
+                alertMeta.innerHTML = `✓ Analysis completed at ${timestamp}<br>📊 Confidence: ${Math.min(95, 70 + state.learningProgress * 5).toFixed(0)}%`;
+            }
+        }
+
+        /**
+         * Update statistics
+         */
+        function updateStatistics() {
+            document.getElementById('totalDays').textContent = state.totalDays;
+            document.getElementById('anomalyCount').textContent = state.anomalyCount;
+            
+            const accuracy = Math.min(95, 60 + state.learningProgress * 7);
+            document.getElementById('accuracy').textContent = accuracy.toFixed(0) + '%';
+            
+            const learningPercent = Math.min(100, state.learningProgress * 20);
+            document.getElementById('learningPercent').textContent = learningPercent.toFixed(0) + '%';
+            document.getElementById('progressFill').style.width = learningPercent + '%';
+        }
+
+        /**
+         * Add to history
+         */
+        function addToHistory(result) {
+            const timestamp = new Date().toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            state.history.unshift({
+                date: timestamp,
+                isAnomaly: result.isAnomaly,
+                deviation: result.avgDeviation
+            });
+            
+            // Keep last 20 entries
+            if (state.history.length > 20) {
+                state.history.pop();
+            }
+            
+            updateHistoryDisplay();
+        }
+
+        /**
+         * Update history display
+         */
+        function updateHistoryDisplay() {
+            const container = document.getElementById('historyTimeline');
+            container.innerHTML = '';
+            
+            if (state.history.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📜</div>
+                        <div class="empty-text">No history available<br>Analysis results will appear here</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            state.history.forEach((entry, index) => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                item.innerHTML = `
+                    <div class="timeline-dot ${entry.isAnomaly ? 'anomaly' : 'normal'}">
+                        ${entry.isAnomaly ? '⚠️' : '✓'}
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">${entry.date}</div>
+                        <div class="timeline-status">
+                            ${entry.isAnomaly ? 
+                                `<span class="badge badge-danger">Anomaly Detected</span>` : 
+                                `<span class="badge badge-success">Normal Behavior</span>`
+                            }
+                            <span style="margin-left: 8px; color: #6b7280;">Deviation: ${entry.deviation.toFixed(2)} km</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        /**
+         * Resize chart canvas
+         */
+        function resizeChart() {
+            const container = chartCanvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            chartCanvas.width = container.offsetWidth * dpr;
+            chartCanvas.height = container.offsetHeight * dpr;
+            chartCanvas.style.width = container.offsetWidth + 'px';
+            chartCanvas.style.height = container.offsetHeight + 'px';
+            chartCtx.scale(dpr, dpr);
+        }
+
+        /**
+         * Draw deviation chart
+         */
+        function drawChart() {
+            const width = chartCanvas.offsetWidth;
+            const height = chartCanvas.offsetHeight;
+            
+            chartCtx.clearRect(0, 0, width, height);
+            
+            if (state.deviationHistory.length === 0) {
+                // Empty state
+                chartCtx.fillStyle = '#d1d5db';
+                chartCtx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+                chartCtx.textAlign = 'center';
+                chartCtx.fillText('No data available', width / 2, height / 2);
+                return;
+            }
+            
+            const padding = 40;
+            const graphWidth = width - padding * 2;
+            const graphHeight = height - padding * 2;
+            
+            // Find max deviation
+            const maxDeviation = Math.max(...state.deviationHistory.map(d => d.deviation), 10);
+            
+            // Draw grid lines
+            chartCtx.strokeStyle = '#f3f4f6';
+            chartCtx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (graphHeight / 4) * i;
+                chartCtx.beginPath();
+                chartCtx.moveTo(padding, y);
+                chartCtx.lineTo(width - padding, y);
+                chartCtx.stroke();
+                
+                // Y-axis labels
+                chartCtx.fillStyle = '#9ca3af';
+                chartCtx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+                chartCtx.textAlign = 'right';
+                chartCtx.fillText((maxDeviation * (4 - i) / 4).toFixed(1) + ' km', padding - 10, y + 4);
+            }
+            
+            // Draw threshold line
+            const thresholdY = padding + graphHeight - (5 / maxDeviation) * graphHeight;
+            chartCtx.strokeStyle = '#fbbf24';
+            chartCtx.lineWidth = 2;
+            chartCtx.setLineDash([5, 5]);
+            chartCtx.beginPath();
+            chartCtx.moveTo(padding, thresholdY);
+            chartCtx.lineTo(width - padding, thresholdY);
+            chartCtx.stroke();
+            chartCtx.setLineDash([]);
+            
+            // Draw threshold label
+            chartCtx.fillStyle = '#f59e0b';
+            chartCtx.font = 'bold 10px -apple-system, BlinkMacSystemFont, sans-serif';
+            chartCtx.textAlign = 'left';
+            chartCtx.fillText('THRESHOLD', padding + 5, thresholdY - 5);
+            
+            // Draw line chart
+            const points = state.deviationHistory.map((d, i) => {
+                const x = padding + (graphWidth / (state.deviationHistory.length - 1 || 1)) * i;
+                const y = padding + graphHeight - (d.deviation / maxDeviation) * graphHeight;
+                return { x, y, isAnomaly: d.isAnomaly };
+            });
+            
+            // Draw gradient fill
+            if (points.length > 1) {
+                const gradient = chartCtx.createLinearGradient(0, padding, 0, height - padding);
+                gradient.addColorStop(0, 'rgba(102, 126, 234, 0.3)');
+                gradient.addColorStop(1, 'rgba(102, 126, 234, 0.05)');
+                
+                chartCtx.fillStyle = gradient;
+                chartCtx.beginPath();
+                chartCtx.moveTo(points[0].x, height - padding);
+                points.forEach(p => chartCtx.lineTo(p.x, p.y));
+                chartCtx.lineTo(points[points.length - 1].x, height - padding);
+                chartCtx.closePath();
+                chartCtx.fill();
+            }
+            
+            // Draw line
+            chartCtx.strokeStyle = '#667eea';
+            chartCtx.lineWidth = 3;
+            chartCtx.lineJoin = 'round';
+            chartCtx.lineCap = 'round';
+            chartCtx.beginPath();
+            points.forEach((p, i) => {
+                if (i === 0) {
+                    chartCtx.moveTo(p.x, p.y);
+                } else {
+                    chartCtx.lineTo(p.x, p.y);
+                }
+            });
+            chartCtx.stroke();
+            
+            // Draw points
+            points.forEach((p, i) => {
+                chartCtx.beginPath();
+                chartCtx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                chartCtx.fillStyle = p.isAnomaly ? '#ef4444' : '#10b981';
+                chartCtx.fill();
+                chartCtx.strokeStyle = 'white';
+                chartCtx.lineWidth = 2;
+                chartCtx.stroke();
+                
+                // Day labels
+                if (i % Math.ceil(state.deviationHistory.length / 7) === 0 || i === state.deviationHistory.length - 1) {
+                    chartCtx.fillStyle = '#6b7280';
+                    chartCtx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+                    chartCtx.textAlign = 'center';
+                    chartCtx.fillText('Day ' + state.deviationHistory[i].day, p.x, height - padding + 20);
+                }
+            });
+        }
+
+        /**
+         * Switch tabs
+         */
+        function switchTab(index) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach((tab, i) => {
+                if (i === index) {
+                    tab.classList.add('active');
+                    contents[i].classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                    contents[i].classList.remove('active');
+                }
+            });
+        }
+
+        /**
+         * Run analysis
+         */
+        async function runAnalysis() {
+            const btn = document.getElementById('analyzeBtn');
+            const btnText = document.getElementById('btnText');
+            const alertCard = document.getElementById('alertCard');
+            
+            // Disable button
+            btn.disabled = true;
+            btnText.textContent = 'Analyzing...';
+            btn.innerHTML = '<div class="button-spinner"></div><span>Processing Movement Data...</span>';
+            
+            // Hide alert temporarily
+            alertCard.classList.remove('show');
+            
+            // Simulate processing time
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Generate and analyze
+            generateTodayPattern();
+            displayPattern(state.todayPattern, 'todayList');
+            
+            const result = detectAnomaly();
+            
+            // Update state
+            state.totalDays++;
+            state.learningProgress = Math.min(5, state.totalDays / 4);
+            
+            // Update learning baseline (accumulate patterns)
+            if (state.totalDays % 3 === 0 && !result.isAnomaly) {
+                // Refine baseline with normal patterns
+                for (let i = 0; i < Math.min(state.baselinePattern.length, state.todayPattern.length); i++) {
+                    state.baselinePattern[i].lat = (state.baselinePattern[i].lat + state.todayPattern[i].lat) / 2;
+                    state.baselinePattern[i].lng = (state.baselinePattern[i].lng + state.todayPattern[i].lng) / 2;
+                }
+                displayPattern(state.baselinePattern, 'baselineList');
+            }
+            
+            // Display results
+            displayAlert(result);
+            addToHistory(result);
+            updateStatistics();
+            drawChart();
+            
+            // Save state
+            saveState();
+            
+            // Re-enable button
+            btn.disabled = false;
+            btn.innerHTML = '<span>🔄</span><span id="btnText">Run Next Analysis</span>';
+            
+            // Auto switch to Today tab
+            switchTab(0);
+        }
+
+        /**
+         * Save state to localStorage
+         */
+        function saveState() {
+            try {
+                const stateToSave = {
+                    totalDays: state.totalDays,
+                    anomalyCount: state.anomalyCount,
+                    learningProgress: state.learningProgress,
+                    history: state.history,
+                    deviationHistory: state.deviationHistory,
+                    baselinePattern: state.baselinePattern
+                };
+                const data = JSON.stringify(stateToSave);
+                // Store in memory (simulated persistence)
+                window.appState = data;
+            } catch (e) {
+                console.log('State save simulated (no localStorage)');
+            }
+        }
+
+        /**
+         * Load state from memory
+         */
+        function loadState() {
+            try {
+                if (window.appState) {
+                    const loaded = JSON.parse(window.appState);
+                    state.totalDays = loaded.totalDays || 0;
+                    state.anomalyCount = loaded.anomalyCount || 0;
+                    state.learningProgress = loaded.learningProgress || 0;
+                    state.history = loaded.history || [];
+                    state.deviationHistory = loaded.deviationHistory || [];
+                    if (loaded.baselinePattern) {
+                        state.baselinePattern = loaded.baselinePattern;
+                        displayPattern(state.baselinePattern, 'baselineList');
+                    }
+                    
+                    updateStatistics();
+                    updateHistoryDisplay();
+                    drawChart();
+                }
+            } catch (e) {
+                console.log('No previous state found');
+            }
+        }
+
+        // Initialize app on load
+        window.onload = init;
+    </script>
+</body>
+</html>
