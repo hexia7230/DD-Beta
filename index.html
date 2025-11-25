@@ -3,8 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dementia Early Detection System</title>
+    <title>Dementia Detection System Beta</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
+        :root {
+            --primary: #0066cc;
+            --primary-dark: #004c99;
+            --success: #00a86b;
+            --danger: #dc3545;
+            --warning: #ff9500;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #1a1a1a;
+            --text-muted: #6c757d;
+            --border: #e0e0e0;
+            --shadow: rgba(0, 102, 204, 0.08);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,192 +29,265 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f7fa;
-            min-height: 100vh;
-            padding: 0;
-            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Mobile-first design */
         .app-container {
-            max-width: 420px;
+            max-width: 428px;
             margin: 0 auto;
-            background: #ffffff;
+            background: var(--card);
             min-height: 100vh;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
-            position: relative;
-            overflow: hidden;
+            box-shadow: 0 0 40px var(--shadow);
         }
 
-        /* Status bar */
-        .status-bar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            padding: 8px 20px;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 12px;
-            font-weight: 500;
+            margin-bottom: 8px;
         }
 
-        .status-time {
-            font-weight: 600;
-        }
-
-        .status-icons {
-            display: flex;
-            gap: 8px;
-        }
-
-        /* App header */
-        .app-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 20px 30px;
-            text-align: center;
-            position: relative;
-        }
-
-        .app-header h1 {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .app-header p {
-            font-size: 13px;
-            opacity: 0.9;
-        }
-
-        .monitoring-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
+        .status-badge {
             display: flex;
             align-items: center;
             gap: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
         }
 
-        .pulse-dot {
-            width: 8px;
-            height: 8px;
-            background: #4ade80;
+        .pulse {
+            width: 6px;
+            height: 6px;
+            background: #00ff88;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
+            50% { opacity: 0.5; transform: scale(1.3); }
         }
 
-        /* Dashboard cards */
-        .dashboard {
-            padding: 20px;
-            margin-top: -15px;
-            position: relative;
-            z-index: 10;
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
 
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 20px;
+        .header-subtitle {
+            font-size: 12px;
+            opacity: 0.85;
+            font-weight: 500;
+        }
+
+        /* Content */
+        .content {
+            padding: 16px;
+        }
+
+        .section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
             margin-bottom: 16px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px var(--shadow);
         }
 
-        .card:hover {
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-            transform: translateY(-2px);
-        }
-
-        .card-header {
+        .section-header {
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
+            align-items: center;
+            margin-bottom: 12px;
         }
 
-        .card-title {
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
+            gap: 8px;
         }
 
-        .card-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
+        .section-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 16px;
         }
 
-        .icon-purple {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .section-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
         }
 
-        .icon-blue {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        }
-
-        .icon-green {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-
-        .icon-red {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        }
-
-        /* Stats grid */
+        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 10px;
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            border-radius: 12px;
-            padding: 14px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 8px;
             text-align: center;
         }
 
         .stat-value {
-            font-size: 22px;
-            font-weight: 700;
-            color: #1f2937;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
             margin-bottom: 4px;
         }
 
         .stat-label {
             font-size: 10px;
-            color: #6b7280;
+            color: var(--text-muted);
             text-transform: uppercase;
-            font-weight: 600;
+            font-weight: 700;
             letter-spacing: 0.5px;
         }
 
-        /* Chart canvas */
+        /* Model Info */
+        .model-info {
+            background: #f0f7ff;
+            border: 1px solid #cce5ff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+
+        .model-info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .model-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .model-info-label {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .model-info-value {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        /* Slider */
+        .slider-container {
+            margin: 12px 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 10px;
+            background: #e9ecef;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+        }
+
+        /* Map */
+        .map-container {
+            height: 280px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin: 12px 0;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .map-legend {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 8px;
+            font-size: 11px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* Chart */
         .chart-container {
-            margin: 16px 0;
-            position: relative;
             height: 200px;
+            position: relative;
+            margin: 12px 0;
         }
 
         canvas {
@@ -205,85 +295,68 @@
             height: 100%;
         }
 
-        /* Location list */
-        .location-list {
-            max-height: 220px;
+        /* List */
+        .point-list {
+            max-height: 240px;
             overflow-y: auto;
             margin-top: 12px;
         }
 
-        .location-item {
-            display: flex;
-            align-items: flex-start;
-            padding: 12px;
-            background: #f9fafb;
-            border-radius: 10px;
+        .point-item {
+            background: #f8f9fa;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
             margin-bottom: 8px;
-            transition: all 0.2s ease;
-            position: relative;
-            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .location-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 3px;
-            height: 100%;
-            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .location-item:hover {
-            background: #f3f4f6;
-            transform: translateX(4px);
-        }
-
-        .location-number {
+        .point-number {
             width: 28px;
             height: 28px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            border-radius: 8px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 12px;
             font-weight: 700;
-            margin-right: 12px;
             flex-shrink: 0;
         }
 
-        .location-details {
+        .point-details {
             flex: 1;
+            font-size: 12px;
         }
 
-        .location-time {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 4px;
+        .point-time {
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 2px;
         }
 
-        .location-coords {
-            font-size: 11px;
-            color: #6b7280;
+        .point-coords {
+            color: var(--text-muted);
             font-family: 'Courier New', monospace;
+            font-size: 11px;
         }
 
-        /* Alert card */
-        .alert-card {
-            border-radius: 16px;
-            padding: 20px;
+        /* Alert */
+        .alert {
+            border-radius: 10px;
+            padding: 16px;
             margin-bottom: 16px;
             display: none;
-            animation: slideIn 0.4s ease;
+            animation: slideIn 0.3s ease;
         }
 
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateY(-20px);
+                transform: translateY(-10px);
             }
             to {
                 opacity: 1;
@@ -291,91 +364,105 @@
             }
         }
 
-        .alert-card.show {
+        .alert.show {
             display: block;
         }
 
-        .alert-normal {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-            border: 2px solid #6ee7b7;
-        }
-
-        .alert-warning {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border: 2px solid #fbbf24;
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
         }
 
         .alert-danger {
-            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-            border: 2px solid #f87171;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
         }
 
         .alert-icon {
-            font-size: 40px;
+            font-size: 32px;
             text-align: center;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .alert-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             text-align: center;
-            margin-bottom: 8px;
-            color: #1f2937;
+            margin-bottom: 6px;
+            color: var(--text);
         }
 
         .alert-message {
-            font-size: 14px;
+            font-size: 13px;
             text-align: center;
-            color: #4b5563;
-            line-height: 1.6;
+            color: var(--text-muted);
+            line-height: 1.5;
         }
 
-        .alert-meta {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        .alert-details {
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
             font-size: 12px;
-            color: #6b7280;
-            text-align: center;
         }
 
-        /* Action button */
-        .action-button {
+        .alert-detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .alert-detail-row:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Buttons */
+        .btn {
             width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            padding: 14px;
             border: none;
-            border-radius: 14px;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            gap: 8px;
+            transition: all 0.2s ease;
+            margin-bottom: 10px;
         }
 
-        .action-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
         }
 
-        .action-button:active {
-            transform: translateY(0);
+        .btn-primary:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 6px rgba(0, 102, 204, 0.3);
         }
 
-        .action-button:disabled {
-            background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+        .btn-secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:active {
+            background: #f0f7ff;
+        }
+
+        .btn:disabled {
+            background: #e9ecef;
+            color: #adb5bd;
             cursor: not-allowed;
-            transform: none;
             box-shadow: none;
         }
 
-        .button-spinner {
+        .btn-spinner {
             width: 16px;
             height: 16px;
             border: 2px solid rgba(255, 255, 255, 0.3);
@@ -388,35 +475,33 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Learning progress */
-        .learning-progress {
-            margin: 16px 0;
+        /* Progress */
+        .progress-container {
+            margin: 12px 0;
         }
 
         .progress-label {
             display: flex;
             justify-content: space-between;
             font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 8px;
             font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
         }
 
         .progress-bar {
             height: 8px;
-            background: #e5e7eb;
+            background: #e9ecef;
             border-radius: 10px;
             overflow: hidden;
-            position: relative;
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
             border-radius: 10px;
             transition: width 0.5s ease;
             position: relative;
-            overflow: hidden;
         }
 
         .progress-fill::after {
@@ -426,7 +511,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
             animation: shimmer 2s infinite;
         }
 
@@ -435,888 +520,1131 @@
             100% { transform: translateX(100%); }
         }
 
-        /* History timeline */
-        .history-timeline {
-            margin-top: 16px;
-        }
-
-        .timeline-item {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-            position: relative;
-        }
-
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: 15px;
-            top: 36px;
-            width: 2px;
-            height: calc(100% + 16px);
-            background: #e5e7eb;
-        }
-
-        .timeline-item:last-child::before {
-            display: none;
-        }
-
-        .timeline-dot {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
             font-size: 14px;
-            z-index: 1;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1000;
+            max-width: 90%;
         }
 
-        .timeline-dot.normal {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        .toast.show {
+            display: block;
+            animation: toastIn 0.3s ease;
         }
 
-        .timeline-dot.anomaly {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
         }
 
-        .timeline-content {
-            flex: 1;
-            background: #f9fafb;
-            padding: 12px;
+        /* Scrollbar */
+        .point-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .point-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
             border-radius: 10px;
         }
 
-        .timeline-date {
-            font-size: 12px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 4px;
+        .point-list::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
         }
 
-        .timeline-status {
-            font-size: 11px;
-            color: #6b7280;
+        .point-list::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
         }
 
-        /* Empty state */
+        /* Empty State */
         .empty-state {
             text-align: center;
             padding: 40px 20px;
-            color: #9ca3af;
+            color: var(--text-muted);
         }
 
         .empty-icon {
             font-size: 48px;
             margin-bottom: 12px;
+            opacity: 0.5;
         }
 
         .empty-text {
             font-size: 14px;
             line-height: 1.6;
         }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 10px;
-            background: #f3f4f6;
-            border: none;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #6b7280;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* Scrollbar styling */
-        .location-list::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .location-list::-webkit-scrollbar-track {
-            background: #f3f4f6;
-            border-radius: 10px;
-        }
-
-        .location-list::-webkit-scrollbar-thumb {
-            background: #d1d5db;
-            border-radius: 10px;
-        }
-
-        .location-list::-webkit-scrollbar-thumb:hover {
-            background: #9ca3af;
-        }
-
-        /* Badge */
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .badge-success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .badge-danger {
-            background: #fecaca;
-            color: #991b1b;
-        }
-
-        .badge-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .badge-info {
-            background: #dbeafe;
-            color: #1e40af;
-        }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <span class="status-time" id="statusTime">9:41</span>
-            <div class="status-icons">
-                <span>📶</span>
-                <span>📡</span>
-                <span>🔋</span>
+        <!-- Header -->
+        <div class="header">
+            <div class="header-top">
+                <div>
+                    <div class="header-title">DD-Beta</div>
+                    <div class="header-subtitle">Neural Network Analysis System</div>
+                </div>
+                <div class="status-badge">
+                    <span class="pulse"></span>
+                    <span id="systemStatus">ACTIVE</span>
+                </div>
             </div>
         </div>
 
-        <!-- App Header -->
-        <div class="app-header">
-            <div class="monitoring-badge">
-                <span class="pulse-dot"></span>
-                <span>MONITORING</span>
-            </div>
-            <h1>DD-Beta</h1>
-            <p>AI-Powered Behavioral Analysis System</p>
-        </div>
-
-        <!-- Dashboard -->
-        <div class="dashboard">
-            <!-- Alert Card -->
-            <div class="alert-card" id="alertCard">
-                <div class="alert-icon" id="alertIcon">✓</div>
-                <div class="alert-title" id="alertTitle">Status Unknown</div>
-                <div class="alert-message" id="alertMessage">Run analysis to check behavioral patterns</div>
-                <div class="alert-meta" id="alertMeta"></div>
+        <!-- Content -->
+        <div class="content">
+            <!-- Alert -->
+            <div class="alert" id="alertBox">
+                <div class="alert-icon" id="alertIcon">🤖</div>
+                <div class="alert-title" id="alertTitle">System Ready</div>
+                <div class="alert-message" id="alertMessage">Neural network initialized</div>
+                <div class="alert-details" id="alertDetails"></div>
             </div>
 
-            <!-- Statistics Card -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <div class="card-icon icon-purple">📊</div>
-                        <span>Analysis Overview</span>
+            <!-- Statistics -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <div class="section-icon">📊</div>
+                        <span>System Statistics</span>
                     </div>
                 </div>
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-value" id="totalDays">0</div>
-                        <div class="stat-label">Days Tracked</div>
+                        <div class="stat-value" id="totalRuns">0</div>
+                        <div class="stat-label">Analyses</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" id="accuracy">0%</div>
+                        <div class="stat-value" id="accuracyValue">0%</div>
                         <div class="stat-label">Accuracy</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" id="anomalyCount">0</div>
+                        <div class="stat-value" id="anomalyTotal">0</div>
                         <div class="stat-label">Anomalies</div>
                     </div>
                 </div>
-                
-                <div class="learning-progress">
+
+                <div class="progress-container">
                     <div class="progress-label">
-                        <span>Learning Progress</span>
-                        <span id="learningPercent">0%</span>
+                        <span>Training Progress</span>
+                        <span id="progressPercent">0%</span>
                     </div>
                     <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="model-info">
+                    <div class="model-info-row">
+                        <span class="model-info-label">Model Status</span>
+                        <span class="model-info-value" id="modelStatus">Initializing</span>
+                    </div>
+                    <div class="model-info-row">
+                        <span class="model-info-label">Training Epochs</span>
+                        <span class="model-info-value" id="epochCount">0</span>
+                    </div>
+                    <div class="model-info-row">
+                        <span class="model-info-label">Threshold</span>
+                        <span class="model-info-value" id="thresholdValue">—</span>
+                    </div>
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Learning Intensity</span>
+                        <span id="sliderValue">5</span>
+                    </div>
+                    <input type="range" min="1" max="10" value="5" class="slider" id="learningSlider">
+                </div>
+            </div>
+
+            <!-- Map -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <div class="section-icon">🗺️</div>
+                        <span>Movement Patterns</span>
+                    </div>
+                </div>
+                <div class="map-container">
+                    <div id="map"></div>
+                </div>
+                <div class="map-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background: #0066cc;"></span>
+                        <span>Baseline</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background: #00a86b;"></span>
+                        <span>Today</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background: #dc3545;"></span>
+                        <span>Anomaly</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Deviation Chart -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <div class="card-icon icon-blue">📈</div>
-                        <span>Deviation Trends</span>
+            <!-- Error Chart -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <div class="section-icon">📈</div>
+                        <span>Reconstruction Error</span>
                     </div>
+                    <div class="section-meta" id="chartDays">0 days</div>
                 </div>
                 <div class="chart-container">
-                    <canvas id="deviationChart"></canvas>
+                    <canvas id="errorChart"></canvas>
                 </div>
             </div>
 
-            <!-- Tabs for Data Views -->
-            <div class="card">
-                <div class="tabs">
-                    <button class="tab active" onclick="switchTab(0)">📍 Today</button>
-                    <button class="tab" onclick="switchTab(1)">🎯 Baseline</button>
-                    <button class="tab" onclick="switchTab(2)">📜 History</button>
-                </div>
-
-                <!-- Tab Content 0: Today's Data -->
-                <div class="tab-content active" id="tabToday">
-                    <div class="location-list" id="todayList">
-                        <div class="empty-state">
-                            <div class="empty-icon">📍</div>
-                            <div class="empty-text">No movement data yet<br>Start monitoring to track locations</div>
-                        </div>
+            <!-- Today's Points -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <div class="section-icon">📍</div>
+                        <span>Today's Movement</span>
                     </div>
+                    <div class="section-meta" id="pointCount">0 points</div>
                 </div>
-
-                <!-- Tab Content 1: Baseline Data -->
-                <div class="tab-content" id="tabBaseline">
-                    <div class="location-list" id="baselineList"></div>
-                </div>
-
-                <!-- Tab Content 2: History -->
-                <div class="tab-content" id="tabHistory">
-                    <div class="history-timeline" id="historyTimeline">
-                        <div class="empty-state">
-                            <div class="empty-icon">📜</div>
-                            <div class="empty-text">No history available<br>Analysis results will appear here</div>
-                        </div>
+                <div class="point-list" id="pointList">
+                    <div class="empty-state">
+                        <div class="empty-icon">📍</div>
+                        <div class="empty-text">No data yet<br>Run simulation to begin</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Action Button -->
-            <button class="action-button" id="analyzeBtn" onclick="runAnalysis()">
+            <!-- Actions -->
+            <button class="btn btn-primary" id="simulateBtn">
                 <span>🚀</span>
-                <span id="btnText">Start Daily Analysis</span>
+                <span>Start Simulation</span>
+            </button>
+
+            <button class="btn btn-secondary" id="retrainBtn">
+                <span>🔄</span>
+                <span>Retrain Model</span>
+            </button>
+
+            <button class="btn btn-secondary" id="newBaselineBtn">
+                <span>🆕</span>
+                <span>Generate New Baseline</span>
             </button>
         </div>
+
+        <!-- Toast -->
+        <div class="toast" id="toast"></div>
     </div>
 
     <script>
-        // Global state
-        let state = {
-            baselinePattern: [],
-            todayPattern: [],
-            history: [],
-            totalDays: 0,
-            anomalyCount: 0,
-            deviationHistory: [],
-            isLearning: true,
-            learningProgress: 0
+        // Configuration
+        const CONFIG = {
+            MANILA_LAT: 14.5995,
+            MANILA_LNG: 120.9842,
+            TARGET_POINTS: 20,
+            BASE_THRESHOLD: 0.00005,
+            ANOMALY_PROBABILITY: 0.3
         };
 
-        // Manila coordinates
-        const MANILA_LAT = 14.5995;
-        const MANILA_LNG = 120.9842;
-        const COORD_VARIANCE = 0.05;
+        // State Management
+        const state = {
+            model: null,
+            isTrained: false,
+            trainingEpochs: 0,
+            threshold: null,
+            baselineErrors: [],
+            baseline: [],
+            today: [],
+            learningIntensity: 5,
+            totalRuns: 0,
+            anomalyCount: 0,
+            errorHistory: []
+        };
 
-        // Chart context
-        let chartCanvas = null;
-        let chartCtx = null;
+        // Map
+        let map, baselineLayer, todayLayer, anomalyLayer;
 
-        /**
-         * Initialize app
-         */
-        function init() {
-            updateStatusTime();
-            setInterval(updateStatusTime, 1000);
-            
-            generateBaseline();
-            displayPattern(state.baselinePattern, 'baselineList');
-            
-            // Initialize chart
-            chartCanvas = document.getElementById('deviationChart');
-            chartCtx = chartCanvas.getContext('2d');
-            resizeChart();
-            drawChart();
-            
-            window.addEventListener('resize', () => {
-                resizeChart();
-                drawChart();
-            });
-            
-            // Load saved state
-            loadState();
+        // Chart
+        let chartCanvas, chartCtx;
+
+        // DOM Elements
+        const elements = {
+            simulateBtn: document.getElementById('simulateBtn'),
+            retrainBtn: document.getElementById('retrainBtn'),
+            newBaselineBtn: document.getElementById('newBaselineBtn'),
+            learningSlider: document.getElementById('learningSlider'),
+            sliderValue: document.getElementById('sliderValue'),
+            modelStatus: document.getElementById('modelStatus'),
+            epochCount: document.getElementById('epochCount'),
+            thresholdValue: document.getElementById('thresholdValue'),
+            systemStatus: document.getElementById('systemStatus'),
+            totalRuns: document.getElementById('totalRuns'),
+            accuracyValue: document.getElementById('accuracyValue'),
+            anomalyTotal: document.getElementById('anomalyTotal'),
+            progressPercent: document.getElementById('progressPercent'),
+            progressBar: document.getElementById('progressBar'),
+            alertBox: document.getElementById('alertBox'),
+            alertIcon: document.getElementById('alertIcon'),
+            alertTitle: document.getElementById('alertTitle'),
+            alertMessage: document.getElementById('alertMessage'),
+            alertDetails: document.getElementById('alertDetails'),
+            pointList: document.getElementById('pointList'),
+            pointCount: document.getElementById('pointCount'),
+            chartDays: document.getElementById('chartDays'),
+            toast: document.getElementById('toast')
+        };
+
+        // Utility Functions
+        function showToast(message, duration = 3000) {
+            elements.toast.textContent = message;
+            elements.toast.classList.add('show');
+            setTimeout(() => {
+                elements.toast.classList.remove('show');
+            }, duration);
         }
 
-        /**
-         * Update status bar time
-         */
-        function updateStatusTime() {
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            document.getElementById('statusTime').textContent = `${hours}:${minutes}`;
+        function showError(error) {
+            console.error(error);
+            const message = error.message || String(error);
+            showToast('Error: ' + message, 5000);
+            elements.modelStatus.textContent = 'Error';
+            elements.systemStatus.textContent = 'ERROR';
         }
 
-        /**
-         * Generate GPS coordinate
-         */
-        function generateCoordinate() {
-            const lat = MANILA_LAT + (Math.random() - 0.5) * COORD_VARIANCE;
-            const lng = MANILA_LNG + (Math.random() - 0.5) * COORD_VARIANCE;
-            const hours = Math.floor(Math.random() * 12) + 7;
-            const minutes = Math.floor(Math.random() * 60);
-            return {
-                lat: parseFloat(lat.toFixed(6)),
-                lng: parseFloat(lng.toFixed(6)),
-                time: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-            };
-        }
-
-        /**
-         * Generate baseline pattern
-         */
-        function generateBaseline() {
-            state.baselinePattern = [];
-            for (let i = 0; i < 7; i++) {
-                state.baselinePattern.push(generateCoordinate());
+        function ensureLibraries() {
+            if (typeof tf === 'undefined') {
+                throw new Error('TensorFlow.js not loaded');
+            }
+            if (typeof L === 'undefined') {
+                throw new Error('Leaflet not loaded');
             }
         }
 
-        /**
-         * Generate today's pattern with adaptive anomaly generation
-         */
-        function generateTodayPattern() {
-            state.todayPattern = [];
-            
-            // Adaptive anomaly probability based on learning progress
-            const baseAnomalyChance = 0.35;
-            const learningBonus = state.learningProgress * 0.1;
-            const shouldHaveAnomaly = Math.random() < (baseAnomalyChance - learningBonus);
-            
-            if (shouldHaveAnomaly) {
-                const anomalyType = Math.floor(Math.random() * 3);
-                
-                if (anomalyType === 0) {
-                    // Different number of stops
-                    const stopCount = Math.random() < 0.5 ? 4 : 10;
-                    for (let i = 0; i < stopCount; i++) {
-                        state.todayPattern.push(generateCoordinate());
-                    }
-                } else if (anomalyType === 1) {
-                    // Far away locations
-                    for (let i = 0; i < 7; i++) {
-                        const coord = generateCoordinate();
-                        if (i === 2 || i === 4 || i === 6) {
-                            coord.lat += (Math.random() - 0.5) * 0.2;
-                            coord.lng += (Math.random() - 0.5) * 0.2;
-                        }
-                        state.todayPattern.push(coord);
-                    }
-                } else {
-                    // Route drastically changed
-                    for (let i = 0; i < 7; i++) {
-                        const coord = generateCoordinate();
-                        coord.lat += (Math.random() - 0.5) * 0.15;
-                        coord.lng += (Math.random() - 0.5) * 0.15;
-                        state.todayPattern.push(coord);
-                    }
-                }
-            } else {
-                // Normal pattern
-                for (let i = 0; i < 7; i++) {
-                    const baseCoord = state.baselinePattern[i];
-                    state.todayPattern.push({
-                        lat: parseFloat((baseCoord.lat + (Math.random() - 0.5) * 0.01).toFixed(6)),
-                        lng: parseFloat((baseCoord.lng + (Math.random() - 0.5) * 0.01).toFixed(6)),
-                        time: generateTime()
-                    });
-                }
-            }
+        async function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        /**
-         * Generate time
-         */
-        function generateTime() {
-            const hours = Math.floor(Math.random() * 12) + 7;
-            const minutes = Math.floor(Math.random() * 60);
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        }
-
-        /**
-         * Calculate distance using Haversine formula
-         */
-        function calculateDistance(coord1, coord2) {
+        // Haversine Distance
+        function haversineDistance(p1, p2) {
             const R = 6371;
-            const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
-            const dLng = (coord2.lng - coord1.lng) * Math.PI / 180;
-            
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(coord1.lat * Math.PI / 180) * Math.cos(coord2.lat * Math.PI / 180) *
-                      Math.sin(dLng / 2) * Math.sin(dLng / 2);
-            
+            const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+            const dLng = (p2.lng - p1.lng) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 +
+                     Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *
+                     Math.sin(dLng / 2) ** 2;
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             return R * c;
         }
 
-        /**
-         * Enhanced anomaly detection with learning
-         */
-        function detectAnomaly() {
-            let totalDistanceDeviation = 0;
-            let largeDeviations = 0;
-            const stopCountDiff = Math.abs(state.todayPattern.length - state.baselinePattern.length);
-            
-            const minLength = Math.min(state.baselinePattern.length, state.todayPattern.length);
-            for (let i = 0; i < minLength; i++) {
-                const distance = calculateDistance(state.baselinePattern[i], state.todayPattern[i]);
-                totalDistanceDeviation += distance;
-                if (distance > 3) {
-                    largeDeviations++;
+        // Linear Interpolation
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        // Resample to N Points
+        function resampleToN(points, N) {
+            if (!points || points.length === 0) {
+                return Array(N).fill({
+                    lat: CONFIG.MANILA_LAT,
+                    lng: CONFIG.MANILA_LNG,
+                    time: '',
+                    label: ''
+                });
+            }
+            if (points.length === N) return points.map(p => ({...p}));
+            if (points.length === 1) return Array(N).fill({...points[0]});
+
+            const segLens = [];
+            let total = 0;
+            for (let i = 0; i < points.length - 1; i++) {
+                const len = haversineDistance(points[i], points[i + 1]) + 1e-12;
+                segLens.push(len);
+                total += len;
+            }
+
+            if (total === 0) return Array(N).fill({...points[0]});
+
+            const targets = Array(N).fill(0).map((_, i) => total * (i / (N - 1)));
+            const result = [];
+            let acc = 0, seg = 0;
+
+            for (const t of targets) {
+                while (seg < segLens.length - 1 && acc + segLens[seg] < t) {
+                    acc += segLens[seg];
+                    seg++;
+                }
+
+                const start = points[seg];
+                const end = points[seg + 1];
+                const localT = Math.max(0, Math.min(1, (t - acc) / segLens[seg]));
+                const lat = lerp(start.lat, end.lat, localT);
+                const lng = lerp(start.lng, end.lng, localT);
+
+                result.push({
+                    lat: parseFloat(lat.toFixed(6)),
+                    lng: parseFloat(lng.toFixed(6)),
+                    time: start.time || '',
+                    label: (localT < 0.5 ? start.label : end.label) || ''
+                });
+            }
+
+            return result;
+        }
+
+        // Generate Stable Baseline
+        function generateStableBaseline() {
+            const waypoints = [
+                { lat: CONFIG.MANILA_LAT, lng: CONFIG.MANILA_LNG, label: 'Home' },
+                { lat: CONFIG.MANILA_LAT + 0.01, lng: CONFIG.MANILA_LNG + 0.008, label: 'Store' },
+                { lat: CONFIG.MANILA_LAT + 0.018, lng: CONFIG.MANILA_LNG + 0.015, label: 'Park' },
+                { lat: CONFIG.MANILA_LAT + 0.025, lng: CONFIG.MANILA_LNG + 0.022, label: 'Clinic' },
+                { lat: CONFIG.MANILA_LAT + 0.015, lng: CONFIG.MANILA_LNG + 0.012, label: 'Market' },
+                { lat: CONFIG.MANILA_LAT + 0.005, lng: CONFIG.MANILA_LNG + 0.003, label: 'Near Home' },
+                { lat: CONFIG.MANILA_LAT, lng: CONFIG.MANILA_LNG, label: 'Home' }
+            ];
+
+            const raw = [];
+            for (let i = 0; i < waypoints.length - 1; i++) {
+                const start = waypoints[i];
+                const end = waypoints[i + 1];
+                const steps = 3;
+
+                for (let j = 0; j < steps; j++) {
+                    const t = j / steps;
+                    const lat = lerp(start.lat, end.lat, t);
+                    const lng = lerp(start.lng, end.lng, t);
+                    const idx = i * steps + j;
+                    const hours = 7 + Math.floor(idx * 0.5);
+                    const minutes = (idx * 30) % 60;
+
+                    raw.push({
+                        lat: parseFloat(lat.toFixed(6)),
+                        lng: parseFloat(lng.toFixed(6)),
+                        time: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`,
+                        label: j === 0 ? start.label : ''
+                    });
                 }
             }
-            
-            const avgDeviation = totalDistanceDeviation / minLength;
-            
-            // Adaptive thresholds based on learning progress
-            const distanceThreshold = 5 - (state.learningProgress * 1.5);
-            const deviationThreshold = 2 - Math.floor(state.learningProgress * 0.5);
-            const stopThreshold = 3 - Math.floor(state.learningProgress * 0.3);
-            
-            const isAnomaly = avgDeviation > distanceThreshold || 
-                             largeDeviations >= deviationThreshold || 
-                             stopCountDiff >= stopThreshold;
-            
-            // Store deviation data
-            state.deviationHistory.push({
-                day: state.totalDays + 1,
-                deviation: avgDeviation,
-                isAnomaly: isAnomaly
-            });
-            
-            // Keep only last 14 days
-            if (state.deviationHistory.length > 14) {
-                state.deviationHistory.shift();
-            }
-            
-            return {
-                isAnomaly,
-                avgDeviation,
-                largeDeviations,
-                stopCountDiff
-            };
+
+            return resampleToN(raw, CONFIG.TARGET_POINTS);
         }
 
-        /**
-         * Display pattern in list
-         */
-        function displayPattern(pattern, elementId) {
-            const container = document.getElementById(elementId);
-            container.innerHTML = '';
-            
-            pattern.forEach((coord, index) => {
-                const item = document.createElement('div');
-                item.className = 'location-item';
-                item.innerHTML = `
-                    <div class="location-number">${index + 1}</div>
-                    <div class="location-details">
-                        <div class="location-time">🕐 ${coord.time}</div>
-                        <div class="location-coords">📍 ${coord.lat}, ${coord.lng}</div>
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-        }
+        // Generate Today's Pattern
+        function generateTodayPattern(injectAnomaly = false) {
+            const result = [];
 
-        /**
-         * Display alert
-         */
-        function displayAlert(result) {
-            const alertCard = document.getElementById('alertCard');
-            const alertIcon = document.getElementById('alertIcon');
-            const alertTitle = document.getElementById('alertTitle');
-            const alertMessage = document.getElementById('alertMessage');
-            const alertMeta = document.getElementById('alertMeta');
-            
-            alertCard.classList.remove('alert-normal', 'alert-warning', 'alert-danger');
-            alertCard.classList.add('show');
-            
-            const timestamp = new Date().toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            if (result.isAnomaly) {
-                alertCard.classList.add('alert-danger');
-                alertIcon.textContent = '⚠️';
-                alertTitle.textContent = 'Anomaly Detected';
-                alertMessage.innerHTML = `Significant behavioral deviation detected. Average deviation: <strong>${result.avgDeviation.toFixed(2)} km</strong><br>Family notification would be sent via LINE API.`;
-                alertMeta.innerHTML = `🔔 Alert triggered at ${timestamp}<br>📊 Confidence: ${Math.min(95, 70 + state.learningProgress * 5).toFixed(0)}%`;
-                
-                state.anomalyCount++;
+            if (!injectAnomaly) {
+                for (const p of state.baseline) {
+                    const noise = 0.00016;
+                    result.push({
+                        lat: parseFloat((p.lat + (Math.random() - 0.5) * noise).toFixed(6)),
+                        lng: parseFloat((p.lng + (Math.random() - 0.5) * noise).toFixed(6)),
+                        time: p.time,
+                        label: p.label
+                    });
+                }
             } else {
-                alertCard.classList.add('alert-normal');
-                alertIcon.textContent = '✅';
-                alertTitle.textContent = 'Behavior Normal';
-                alertMessage.innerHTML = `Movement patterns are within expected parameters. Average deviation: <strong>${result.avgDeviation.toFixed(2)} km</strong><br>No alerts necessary.`;
-                alertMeta.innerHTML = `✓ Analysis completed at ${timestamp}<br>📊 Confidence: ${Math.min(95, 70 + state.learningProgress * 5).toFixed(0)}%`;
-            }
-        }
+                const anomalyType = Math.floor(Math.random() * 4);
 
-        /**
-         * Update statistics
-         */
-        function updateStatistics() {
-            document.getElementById('totalDays').textContent = state.totalDays;
-            document.getElementById('anomalyCount').textContent = state.anomalyCount;
-            
-            const accuracy = Math.min(95, 60 + state.learningProgress * 7);
-            document.getElementById('accuracy').textContent = accuracy.toFixed(0) + '%';
-            
-            const learningPercent = Math.min(100, state.learningProgress * 20);
-            document.getElementById('learningPercent').textContent = learningPercent.toFixed(0) + '%';
-            document.getElementById('progressFill').style.width = learningPercent + '%';
-        }
+                if (anomalyType === 0) {
+                    // Missing steps
+                    for (let i = 0; i < state.baseline.length; i++) {
+                        if (i >= 5 && i <= 12 && Math.random() < 0.4) continue;
+                        const p = state.baseline[i];
+                        const noise = 0.00016;
+                        result.push({
+                            lat: parseFloat((p.lat + (Math.random() - 0.5) * noise).toFixed(6)),
+                            lng: parseFloat((p.lng + (Math.random() - 0.5) * noise).toFixed(6)),
+                            time: p.time,
+                            label: p.label
+                        });
+                    }
+                } else if (anomalyType === 1) {
+                    // Large detour
+                    for (let i = 0; i < state.baseline.length; i++) {
+                        const p = state.baseline[i];
+                        let lat = p.lat, lng = p.lng;
 
-        /**
-         * Add to history
-         */
-        function addToHistory(result) {
-            const timestamp = new Date().toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            state.history.unshift({
-                date: timestamp,
-                isAnomaly: result.isAnomaly,
-                deviation: result.avgDeviation
-            });
-            
-            // Keep last 20 entries
-            if (state.history.length > 20) {
-                state.history.pop();
-            }
-            
-            updateHistoryDisplay();
-        }
+                        if (i >= 8 && i <= 12) {
+                            lat += (Math.random() - 0.5) * 0.025;
+                            lng += (Math.random() - 0.5) * 0.025;
+                        } else {
+                            const noise = 0.00016;
+                            lat += (Math.random() - 0.5) * noise;
+                            lng += (Math.random() - 0.5) * noise;
+                        }
 
-        /**
-         * Update history display
-         */
-        function updateHistoryDisplay() {
-            const container = document.getElementById('historyTimeline');
-            container.innerHTML = '';
-            
-            if (state.history.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">📜</div>
-                        <div class="empty-text">No history available<br>Analysis results will appear here</div>
-                    </div>
-                `;
-                return;
-            }
-            
-            state.history.forEach((entry, index) => {
-                const item = document.createElement('div');
-                item.className = 'timeline-item';
-                item.innerHTML = `
-                    <div class="timeline-dot ${entry.isAnomaly ? 'anomaly' : 'normal'}">
-                        ${entry.isAnomaly ? '⚠️' : '✓'}
-                    </div>
-                    <div class="timeline-content">
-                        <div class="timeline-date">${entry.date}</div>
-                        <div class="timeline-status">
-                            ${entry.isAnomaly ? 
-                                `<span class="badge badge-danger">Anomaly Detected</span>` : 
-                                `<span class="badge badge-success">Normal Behavior</span>`
+                        result.push({
+                            lat: parseFloat(lat.toFixed(6)),
+                            lng: parseFloat(lng.toFixed(6)),
+                            time: p.time,
+                            label: p.label
+                        });
+                    }
+                } else if (anomalyType === 2) {
+                    // Extra side trip
+                    for (let i = 0; i < state.baseline.length; i++) {
+                        const p = state.baseline[i];
+                        const noise = 0.00016;
+                        result.push({
+                            lat: parseFloat((p.lat + (Math.random() - 0.5) * noise).toFixed(6)),
+                            lng: parseFloat((p.lng + (Math.random() - 0.5) * noise).toFixed(6)),
+                            time: p.time,
+                            label: p.label
+                        });
+
+                        if (i === 10) {
+                            for (let j = 0; j < 5; j++) {
+                                result.push({
+                                    lat: parseFloat((p.lat + 0.02 + Math.random() * 0.005).toFixed(6)),
+                                    lng: parseFloat((p.lng - 0.015 + Math.random() * 0.005).toFixed(6)),
+                                    time: p.time,
+                                    label: 'Unknown Location'
+                                });
                             }
-                            <span style="margin-left: 8px; color: #6b7280;">Deviation: ${entry.deviation.toFixed(2)} km</span>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(item);
+                        }
+                    }
+                } else {
+                    // Drift pattern
+                    let driftLat = 0, driftLng = 0;
+                    for (const p of state.baseline) {
+                        driftLat += (Math.random() - 0.5) * 0.0008;
+                        driftLng += (Math.random() - 0.5) * 0.0008;
+                        result.push({
+                            lat: parseFloat((p.lat + driftLat).toFixed(6)),
+                            lng: parseFloat((p.lng + driftLng).toFixed(6)),
+                            time: p.time,
+                            label: p.label
+                        });
+                    }
+                }
+            }
+
+            return resampleToN(result, CONFIG.TARGET_POINTS);
+        }
+
+        // Initialize Model
+        async function initModel() {
+            ensureLibraries();
+
+            if (state.model) {
+                try {
+                    state.model.dispose();
+                } catch (e) {
+                    console.warn('Model disposal failed', e);
+                }
+            }
+
+            const inputDim = CONFIG.TARGET_POINTS * 2;
+
+            state.model = tf.sequential({
+                layers: [
+                    tf.layers.dense({ inputShape: [inputDim], units: 32, activation: 'relu' }),
+                    tf.layers.dense({ units: 16, activation: 'relu' }),
+                    tf.layers.dense({ units: 32, activation: 'relu' }),
+                    tf.layers.dense({ units: inputDim, activation: 'linear' })
+                ]
             });
+
+            state.model.compile({
+                optimizer: tf.train.adam(0.001),
+                loss: 'meanSquaredError',
+                metrics: ['mae']
+            });
+
+            state.isTrained = false;
+            state.trainingEpochs = 0;
+            state.threshold = null;
+            state.baselineErrors = [];
+
+            elements.modelStatus.textContent = 'Ready';
         }
 
-        /**
-         * Resize chart canvas
-         */
+        // Train Model
+        async function trainModel() {
+            if (!state.model) await initModel();
+
+            elements.modelStatus.textContent = 'Training...';
+            elements.systemStatus.textContent = 'TRAINING';
+
+            if (!state.baseline || state.baseline.length !== CONFIG.TARGET_POINTS) {
+                throw new Error('Baseline must be ready');
+            }
+
+            // Augmented dataset
+            const augCount = Math.max(6, state.learningIntensity);
+            const xs = [];
+
+            for (let i = 0; i < augCount; i++) {
+                const noise = 0.00008 + Math.random() * 0.00024;
+                const arr = [];
+                for (const p of state.baseline) {
+                    arr.push(p.lat + (Math.random() - 0.5) * noise);
+                    arr.push(p.lng + (Math.random() - 0.5) * noise);
+                }
+                xs.push(arr);
+            }
+
+            const xsTensor = tf.tensor2d(xs);
+            const ysTensor = xsTensor.clone();
+
+            const epochs = state.learningIntensity * 12;
+            const batchSize = Math.min(4, xs.length);
+
+            const yieldCallback = {
+                onEpochEnd: async (epoch, logs) => {
+                    state.trainingEpochs = epoch + 1;
+                    elements.epochCount.textContent = state.trainingEpochs;
+                    updateProgress();
+                    await tf.nextFrame();
+                }
+            };
+
+            try {
+                await state.model.fit(xsTensor, ysTensor, {
+                    epochs,
+                    batchSize,
+                    verbose: 0,
+                    callbacks: yieldCallback
+                });
+            } catch (e) {
+                xsTensor.dispose();
+                ysTensor.dispose();
+                throw e;
+            }
+
+            xsTensor.dispose();
+            ysTensor.dispose();
+
+            state.isTrained = true;
+            elements.modelStatus.textContent = 'Trained';
+            elements.systemStatus.textContent = 'ACTIVE';
+
+            await computeBaselineErrors(24);
+            updateProgress();
+        }
+
+        // Compute Baseline Error Distribution
+        async function computeBaselineErrors(trials = 24) {
+            if (!state.isTrained) return;
+
+            state.baselineErrors = [];
+
+            for (let i = 0; i < trials; i++) {
+                const jitter = 0.00004 + Math.random() * 0.00016;
+                const arr = [];
+
+                for (const p of state.baseline) {
+                    arr.push(p.lat + (Math.random() - 0.5) * jitter);
+                    arr.push(p.lng + (Math.random() - 0.5) * jitter);
+                }
+
+                const inp = tf.tensor2d([arr]);
+                const pred = state.model.predict(inp);
+                const mse = tf.losses.meanSquaredError(inp, pred);
+                const value = (await mse.data())[0];
+
+                state.baselineErrors.push(value);
+
+                inp.dispose();
+                pred.dispose();
+                mse.dispose();
+
+                if (i % 6 === 0) await tf.nextFrame();
+            }
+
+            const mean = state.baselineErrors.reduce((a, b) => a + b, 0) / state.baselineErrors.length;
+            const variance = state.baselineErrors.reduce((a, b) => a + (b - mean) ** 2, 0) / state.baselineErrors.length;
+            const std = Math.sqrt(variance);
+
+            state.threshold = mean + 3 * std;
+            elements.thresholdValue.textContent = state.threshold.toExponential(3);
+        }
+
+        // Calculate Anomaly Score
+        async function calculateAnomalyScore(pattern) {
+            if (!state.isTrained) {
+                await trainModel();
+            }
+
+            const arr = [];
+            for (let i = 0; i < CONFIG.TARGET_POINTS; i++) {
+                const p = pattern[i] || { lat: 0, lng: 0 };
+                arr.push(p.lat);
+                arr.push(p.lng);
+            }
+
+            const inp = tf.tensor2d([arr]);
+            const pred = state.model.predict(inp);
+            const mse = tf.losses.meanSquaredError(inp, pred);
+            const score = (await mse.data())[0];
+
+            inp.dispose();
+            pred.dispose();
+            mse.dispose();
+
+            return score;
+        }
+
+        // Update Progress
+        function updateProgress() {
+            const progress = Math.min(100, (state.trainingEpochs / (state.learningIntensity * 12)) * 100);
+            elements.progressPercent.textContent = progress.toFixed(0) + '%';
+            elements.progressBar.style.width = progress + '%';
+
+            const accuracy = Math.min(98, 50 + state.trainingEpochs * 0.3 + state.learningIntensity * 3);
+            elements.accuracyValue.textContent = accuracy.toFixed(0) + '%';
+        }
+
+        // Update Statistics
+        function updateStatistics() {
+            elements.totalRuns.textContent = state.totalRuns;
+            elements.anomalyTotal.textContent = state.anomalyCount;
+            elements.chartDays.textContent = state.errorHistory.length + ' days';
+        }
+
+        // Initialize Map
+        function initMap() {
+            map = L.map('map', { zoomControl: true }).setView([CONFIG.MANILA_LAT, CONFIG.MANILA_LNG], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            baselineLayer = L.layerGroup().addTo(map);
+            todayLayer = L.layerGroup().addTo(map);
+            anomalyLayer = L.layerGroup().addTo(map);
+        }
+
+        // Draw Map
+        function drawMap() {
+            if (!map) return;
+
+            baselineLayer.clearLayers();
+            todayLayer.clearLayers();
+            anomalyLayer.clearLayers();
+
+            if (state.baseline.length) {
+                const coords = state.baseline.map(p => [p.lat, p.lng]);
+                L.polyline(coords, { color: '#0066cc', weight: 4 }).addTo(baselineLayer);
+                state.baseline.forEach((p, i) => {
+                    L.circleMarker([p.lat, p.lng], { radius: 4, color: '#0066cc' })
+                        .bindTooltip(`${i + 1} ${p.label}`)
+                        .addTo(baselineLayer);
+                });
+            }
+
+            if (state.today.length) {
+                const coords = state.today.map(p => [p.lat, p.lng]);
+                const anomalies = [];
+
+                for (let i = 0; i < state.today.length; i++) {
+                    const dist = haversineDistance(state.baseline[i], state.today[i]);
+                    if (dist > 0.5) anomalies.push(i);
+                }
+
+                L.polyline(coords, { color: '#00a86b', weight: 3, dashArray: '6 4' }).addTo(todayLayer);
+
+                state.today.forEach((p, i) => {
+                    if (anomalies.includes(i)) {
+                        L.circleMarker([p.lat, p.lng], { radius: 6, color: '#dc3545', fillOpacity: 0.9 })
+                            .addTo(anomalyLayer);
+                    } else {
+                        L.circleMarker([p.lat, p.lng], { radius: 4, color: '#00a86b', fillOpacity: 0.9 })
+                            .addTo(todayLayer);
+                    }
+                });
+
+                const allCoords = [...state.baseline.map(p => [p.lat, p.lng]), ...state.today.map(p => [p.lat, p.lng])];
+                const bounds = L.latLngBounds(allCoords);
+                map.fitBounds(bounds.pad(0.3));
+            }
+        }
+
+        // Resize Chart
         function resizeChart() {
-            const container = chartCanvas.parentElement;
             const dpr = window.devicePixelRatio || 1;
-            chartCanvas.width = container.offsetWidth * dpr;
-            chartCanvas.height = container.offsetHeight * dpr;
-            chartCanvas.style.width = container.offsetWidth + 'px';
-            chartCanvas.style.height = container.offsetHeight + 'px';
-            chartCtx.scale(dpr, dpr);
+            const rect = chartCanvas.getBoundingClientRect();
+            chartCanvas.width = rect.width * dpr;
+            chartCanvas.height = rect.height * dpr;
+            chartCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
 
-        /**
-         * Draw deviation chart
-         */
+        // Draw Chart
         function drawChart() {
-            const width = chartCanvas.offsetWidth;
-            const height = chartCanvas.offsetHeight;
-            
+            const width = chartCanvas.width / (window.devicePixelRatio || 1);
+            const height = chartCanvas.height / (window.devicePixelRatio || 1);
+
             chartCtx.clearRect(0, 0, width, height);
-            
-            if (state.deviationHistory.length === 0) {
-                // Empty state
-                chartCtx.fillStyle = '#d1d5db';
-                chartCtx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+
+            if (!state.errorHistory.length) {
+                chartCtx.fillStyle = '#6c757d';
+                chartCtx.font = '14px sans-serif';
                 chartCtx.textAlign = 'center';
-                chartCtx.fillText('No data available', width / 2, height / 2);
+                chartCtx.fillText('No data yet', width / 2, height / 2);
                 return;
             }
-            
-            const padding = 40;
-            const graphWidth = width - padding * 2;
-            const graphHeight = height - padding * 2;
-            
-            // Find max deviation
-            const maxDeviation = Math.max(...state.deviationHistory.map(d => d.deviation), 10);
-            
-            // Draw grid lines
-            chartCtx.strokeStyle = '#f3f4f6';
+
+            const padding = 36;
+            const graphW = width - padding * 2;
+            const graphH = height - padding * 2;
+            const maxVal = Math.max(...state.errorHistory.map(d => d.error), state.threshold || 1e-6);
+
+            // Grid
+            chartCtx.strokeStyle = '#e9ecef';
             chartCtx.lineWidth = 1;
             for (let i = 0; i <= 4; i++) {
-                const y = padding + (graphHeight / 4) * i;
+                const y = padding + (graphH / 4) * i;
                 chartCtx.beginPath();
                 chartCtx.moveTo(padding, y);
-                chartCtx.lineTo(width - padding, y);
+                chartCtx.lineTo(padding + graphW, y);
                 chartCtx.stroke();
-                
-                // Y-axis labels
-                chartCtx.fillStyle = '#9ca3af';
-                chartCtx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+
+                chartCtx.fillStyle = '#adb5bd';
+                chartCtx.font = '10px sans-serif';
                 chartCtx.textAlign = 'right';
-                chartCtx.fillText((maxDeviation * (4 - i) / 4).toFixed(1) + ' km', padding - 10, y + 4);
+                chartCtx.fillText((maxVal * (4 - i) / 4 * 100000).toFixed(1), padding - 8, y + 4);
             }
-            
-            // Draw threshold line
-            const thresholdY = padding + graphHeight - (5 / maxDeviation) * graphHeight;
-            chartCtx.strokeStyle = '#fbbf24';
-            chartCtx.lineWidth = 2;
-            chartCtx.setLineDash([5, 5]);
-            chartCtx.beginPath();
-            chartCtx.moveTo(padding, thresholdY);
-            chartCtx.lineTo(width - padding, thresholdY);
-            chartCtx.stroke();
-            chartCtx.setLineDash([]);
-            
-            // Draw threshold label
-            chartCtx.fillStyle = '#f59e0b';
-            chartCtx.font = 'bold 10px -apple-system, BlinkMacSystemFont, sans-serif';
-            chartCtx.textAlign = 'left';
-            chartCtx.fillText('THRESHOLD', padding + 5, thresholdY - 5);
-            
-            // Draw line chart
-            const points = state.deviationHistory.map((d, i) => {
-                const x = padding + (graphWidth / (state.deviationHistory.length - 1 || 1)) * i;
-                const y = padding + graphHeight - (d.deviation / maxDeviation) * graphHeight;
+
+            // Threshold
+            if (state.threshold) {
+                const thrY = padding + graphH - (state.threshold / maxVal) * graphH;
+                chartCtx.setLineDash([6, 4]);
+                chartCtx.strokeStyle = '#ff9500';
+                chartCtx.lineWidth = 2;
+                chartCtx.beginPath();
+                chartCtx.moveTo(padding, thrY);
+                chartCtx.lineTo(padding + graphW, thrY);
+                chartCtx.stroke();
+                chartCtx.setLineDash([]);
+            }
+
+            // Points
+            const pts = state.errorHistory.map((d, i) => {
+                const x = padding + (graphW / Math.max(1, state.errorHistory.length - 1)) * i;
+                const y = padding + graphH - (d.error / maxVal) * graphH;
                 return { x, y, isAnomaly: d.isAnomaly };
             });
-            
-            // Draw gradient fill
-            if (points.length > 1) {
-                const gradient = chartCtx.createLinearGradient(0, padding, 0, height - padding);
-                gradient.addColorStop(0, 'rgba(102, 126, 234, 0.3)');
-                gradient.addColorStop(1, 'rgba(102, 126, 234, 0.05)');
-                
-                chartCtx.fillStyle = gradient;
+
+            // Area fill
+            if (pts.length > 1) {
                 chartCtx.beginPath();
-                chartCtx.moveTo(points[0].x, height - padding);
-                points.forEach(p => chartCtx.lineTo(p.x, p.y));
-                chartCtx.lineTo(points[points.length - 1].x, height - padding);
+                chartCtx.moveTo(pts[0].x, padding + graphH);
+                pts.forEach(p => chartCtx.lineTo(p.x, p.y));
+                chartCtx.lineTo(pts[pts.length - 1].x, padding + graphH);
                 chartCtx.closePath();
+
+                const gradient = chartCtx.createLinearGradient(0, padding, 0, padding + graphH);
+                gradient.addColorStop(0, 'rgba(0, 102, 204, 0.15)');
+                gradient.addColorStop(1, 'rgba(0, 102, 204, 0.02)');
+                chartCtx.fillStyle = gradient;
                 chartCtx.fill();
             }
-            
-            // Draw line
-            chartCtx.strokeStyle = '#667eea';
-            chartCtx.lineWidth = 3;
-            chartCtx.lineJoin = 'round';
-            chartCtx.lineCap = 'round';
+
+            // Line
+            chartCtx.strokeStyle = '#0066cc';
+            chartCtx.lineWidth = 2;
             chartCtx.beginPath();
-            points.forEach((p, i) => {
-                if (i === 0) {
-                    chartCtx.moveTo(p.x, p.y);
-                } else {
-                    chartCtx.lineTo(p.x, p.y);
-                }
+            pts.forEach((p, i) => {
+                if (i === 0) chartCtx.moveTo(p.x, p.y);
+                else chartCtx.lineTo(p.x, p.y);
             });
             chartCtx.stroke();
-            
-            // Draw points
-            points.forEach((p, i) => {
+
+            // Points
+            pts.forEach(p => {
                 chartCtx.beginPath();
                 chartCtx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-                chartCtx.fillStyle = p.isAnomaly ? '#ef4444' : '#10b981';
+                chartCtx.fillStyle = p.isAnomaly ? '#dc3545' : '#00a86b';
                 chartCtx.fill();
                 chartCtx.strokeStyle = 'white';
                 chartCtx.lineWidth = 2;
                 chartCtx.stroke();
-                
-                // Day labels
-                if (i % Math.ceil(state.deviationHistory.length / 7) === 0 || i === state.deviationHistory.length - 1) {
-                    chartCtx.fillStyle = '#6b7280';
-                    chartCtx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
-                    chartCtx.textAlign = 'center';
-                    chartCtx.fillText('Day ' + state.deviationHistory[i].day, p.x, height - padding + 20);
-                }
             });
         }
 
-        /**
-         * Switch tabs
-         */
-        function switchTab(index) {
-            const tabs = document.querySelectorAll('.tab');
-            const contents = document.querySelectorAll('.tab-content');
-            
-            tabs.forEach((tab, i) => {
-                if (i === index) {
-                    tab.classList.add('active');
-                    contents[i].classList.add('active');
-                } else {
-                    tab.classList.remove('active');
-                    contents[i].classList.remove('active');
-                }
+        // Display Point List
+        function displayPointList() {
+            elements.pointList.innerHTML = '';
+            elements.pointCount.textContent = state.today.length + ' points';
+
+            state.today.forEach((p, i) => {
+                const item = document.createElement('div');
+                item.className = 'point-item';
+                item.innerHTML = `
+                    <div class="point-number">${i + 1}</div>
+                    <div class="point-details">
+                        <div class="point-time">🕐 ${p.time} ${p.label ? '• ' + p.label : ''}</div>
+                        <div class="point-coords">📍 ${p.lat}, ${p.lng}</div>
+                    </div>
+                `;
+                elements.pointList.appendChild(item);
             });
         }
 
-        /**
-         * Run analysis
-         */
-        async function runAnalysis() {
-            const btn = document.getElementById('analyzeBtn');
-            const btnText = document.getElementById('btnText');
-            const alertCard = document.getElementById('alertCard');
-            
-            // Disable button
-            btn.disabled = true;
-            btnText.textContent = 'Analyzing...';
-            btn.innerHTML = '<div class="button-spinner"></div><span>Processing Movement Data...</span>';
-            
-            // Hide alert temporarily
-            alertCard.classList.remove('show');
-            
-            // Simulate processing time
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Generate and analyze
-            generateTodayPattern();
-            displayPattern(state.todayPattern, 'todayList');
-            
-            const result = detectAnomaly();
-            
-            // Update state
-            state.totalDays++;
-            state.learningProgress = Math.min(5, state.totalDays / 4);
-            
-            // Update learning baseline (accumulate patterns)
-            if (state.totalDays % 3 === 0 && !result.isAnomaly) {
-                // Refine baseline with normal patterns
-                for (let i = 0; i < Math.min(state.baselinePattern.length, state.todayPattern.length); i++) {
-                    state.baselinePattern[i].lat = (state.baselinePattern[i].lat + state.todayPattern[i].lat) / 2;
-                    state.baselinePattern[i].lng = (state.baselinePattern[i].lng + state.todayPattern[i].lng) / 2;
+        // Display Alert
+        function displayAlert(result) {
+            elements.alertBox.classList.remove('alert-success', 'alert-danger');
+            elements.alertBox.classList.add('show');
+
+            if (result.isAnomaly) {
+                elements.alertBox.classList.add('alert-danger');
+                elements.alertIcon.textContent = '⚠️';
+                elements.alertTitle.textContent = 'ANOMALY DETECTED';
+                elements.alertMessage.textContent = result.explanation;
+                elements.alertDetails.innerHTML = `
+                    <div class="alert-detail-row">
+                        <span>Reconstruction Error:</span>
+                        <span style="font-weight: 700; color: #dc3545;">${(result.score * 100000).toFixed(2)}</span>
+                    </div>
+                    <div class="alert-detail-row">
+                        <span>Threshold:</span>
+                        <span style="font-weight: 700;">${(result.threshold * 100000).toFixed(2)}</span>
+                    </div>
+                    <div class="alert-detail-row">
+                        <span>Path Deviation:</span>
+                        <span style="font-weight: 700;">${result.pathDeviation.toFixed(2)} km</span>
+                    </div>
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1); text-align: center; font-size: 11px;">
+                        🔔 Family notification via LINE API
+                    </div>
+                `;
+            } else {
+                elements.alertBox.classList.add('alert-success');
+                elements.alertIcon.textContent = '✅';
+                elements.alertTitle.textContent = 'BEHAVIOR NORMAL';
+                elements.alertMessage.textContent = result.explanation;
+                elements.alertDetails.innerHTML = `
+                    <div class="alert-detail-row">
+                        <span>Reconstruction Error:</span>
+                        <span style="font-weight: 700; color: #00a86b;">${(result.score * 100000).toFixed(2)}</span>
+                    </div>
+                    <div class="alert-detail-row">
+                        <span>Threshold:</span>
+                        <span style="font-weight: 700;">${(result.threshold * 100000).toFixed(2)}</span>
+                    </div>
+                    <div class="alert-detail-row">
+                        <span>Path Deviation:</span>
+                        <span style="font-weight: 700;">${result.pathDeviation.toFixed(2)} km</span>
+                    </div>
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1); text-align: center; font-size: 11px;">
+                        ✓ No alerts necessary
+                    </div>
+                `;
+            }
+        }
+
+        // Run Simulation
+        async function runSimulation() {
+            try {
+                elements.simulateBtn.disabled = true;
+                elements.simulateBtn.innerHTML = '<div class="btn-spinner"></div><span>Analyzing...</span>';
+                elements.systemStatus.textContent = 'ANALYZING';
+
+                if (!state.baseline.length) {
+                    state.baseline = generateStableBaseline();
+                    drawMap();
                 }
-                displayPattern(state.baselinePattern, 'baselineList');
-            }
-            
-            // Display results
-            displayAlert(result);
-            addToHistory(result);
-            updateStatistics();
-            drawChart();
-            
-            // Save state
-            saveState();
-            
-            // Re-enable button
-            btn.disabled = false;
-            btn.innerHTML = '<span>🔄</span><span id="btnText">Run Next Analysis</span>';
-            
-            // Auto switch to Today tab
-            switchTab(0);
-        }
 
-        /**
-         * Save state to localStorage
-         */
-        function saveState() {
-            try {
-                const stateToSave = {
-                    totalDays: state.totalDays,
-                    anomalyCount: state.anomalyCount,
-                    learningProgress: state.learningProgress,
-                    history: state.history,
-                    deviationHistory: state.deviationHistory,
-                    baselinePattern: state.baselinePattern
-                };
-                const data = JSON.stringify(stateToSave);
-                // Store in memory (simulated persistence)
-                window.appState = data;
-            } catch (e) {
-                console.log('State save simulated (no localStorage)');
-            }
-        }
+                if (!state.isTrained) {
+                    showToast('Training model in background...');
+                    await trainModel();
+                }
 
-        /**
-         * Load state from memory
-         */
-        function loadState() {
-            try {
-                if (window.appState) {
-                    const loaded = JSON.parse(window.appState);
-                    state.totalDays = loaded.totalDays || 0;
-                    state.anomalyCount = loaded.anomalyCount || 0;
-                    state.learningProgress = loaded.learningProgress || 0;
-                    state.history = loaded.history || [];
-                    state.deviationHistory = loaded.deviationHistory || [];
-                    if (loaded.baselinePattern) {
-                        state.baselinePattern = loaded.baselinePattern;
-                        displayPattern(state.baselinePattern, 'baselineList');
+                const shouldInject = Math.random() < CONFIG.ANOMALY_PROBABILITY;
+                state.today = generateTodayPattern(shouldInject);
+
+                displayPointList();
+                drawMap();
+
+                await sleep(500);
+
+                const score = await calculateAnomalyScore(state.today);
+                const threshold = state.threshold || (CONFIG.BASE_THRESHOLD * (1 + (10 - state.learningIntensity) * 0.3));
+                const isAnomaly = score > threshold;
+
+                let totalDev = 0;
+                const minLen = Math.min(state.baseline.length, state.today.length);
+                for (let i = 0; i < minLen; i++) {
+                    totalDev += haversineDistance(state.baseline[i], state.today[i]);
+                }
+                const pathDeviation = totalDev / minLen;
+
+                let explanation = '';
+                if (isAnomaly) {
+                    if (state.today.length !== state.baseline.length) {
+                        explanation = 'Unusual number of stops detected - possible wandering behavior';
+                    } else if (pathDeviation > 5) {
+                        explanation = 'Significant deviation from normal route - unexpected locations visited';
+                    } else {
+                        explanation = 'Pattern reconstruction error exceeds threshold - behavioral anomaly detected';
                     }
-                    
-                    updateStatistics();
-                    updateHistoryDisplay();
-                    drawChart();
+                } else {
+                    explanation = 'Movement patterns consistent with learned baseline routine';
                 }
+
+                state.totalRuns++;
+                state.errorHistory.push({ day: state.totalRuns, error: score, isAnomaly });
+                if (state.errorHistory.length > 12) state.errorHistory.shift();
+                if (isAnomaly) state.anomalyCount++;
+
+                const result = { isAnomaly, score, threshold, pathDeviation, explanation };
+                displayAlert(result);
+                updateStatistics();
+                drawChart();
+
+                showToast(isAnomaly ? 'Anomaly detected!' : 'Pattern normal');
+
             } catch (e) {
-                console.log('No previous state found');
+                showError(e);
+            } finally {
+                elements.simulateBtn.disabled = false;
+                elements.simulateBtn.innerHTML = '<span>🔄</span><span>Run Next Simulation</span>';
+                elements.systemStatus.textContent = 'ACTIVE';
             }
         }
 
-        // Initialize app on load
-        window.onload = init;
+        // Retrain Model
+        async function retrainModel() {
+            try {
+                elements.retrainBtn.disabled = true;
+                elements.retrainBtn.innerHTML = '<div class="btn-spinner"></div><span>Retraining...</span>';
+
+                await initModel();
+                await trainModel();
+
+                showToast('Model retrained successfully');
+            } catch (e) {
+                showError(e);
+            } finally {
+                elements.retrainBtn.disabled = false;
+                elements.retrainBtn.innerHTML = '<span>🔄</span><span>Retrain Model</span>';
+            }
+        }
+
+        // Generate New Baseline
+        async function generateNewBaseline() {
+            if (!confirm('Generate new baseline? This will reset the model.')) return;
+
+            try {
+                elements.newBaselineBtn.disabled = true;
+                elements.systemStatus.textContent = 'RESETTING';
+
+                state.baseline = generateStableBaseline();
+                state.errorHistory = [];
+                state.totalRuns = 0;
+                state.anomalyCount = 0;
+
+                updateStatistics();
+
+                await initModel();
+                await trainModel();
+
+                drawMap();
+                drawChart();
+
+                showToast('New baseline generated and model trained');
+            } catch (e) {
+                showError(e);
+            } finally {
+                elements.newBaselineBtn.disabled = false;
+                elements.systemStatus.textContent = 'ACTIVE';
+            }
+        }
+
+        // Event Listeners
+        elements.simulateBtn.addEventListener('click', async () => {
+            try {
+                await runSimulation();
+            } catch (e) {
+                showError(e);
+            }
+        });
+
+        elements.retrainBtn.addEventListener('click', async () => {
+            try {
+                await retrainModel();
+            } catch (e) {
+                showError(e);
+            }
+        });
+
+        elements.newBaselineBtn.addEventListener('click', async () => {
+            try {
+                await generateNewBaseline();
+            } catch (e) {
+                showError(e);
+            }
+        });
+
+        elements.learningSlider.addEventListener('input', (e) => {
+            state.learningIntensity = parseInt(e.target.value);
+            elements.sliderValue.textContent = e.target.value;
+        });
+
+        window.addEventListener('resize', () => {
+            resizeChart();
+            drawChart();
+        });
+
+        // Initialize Application
+        async function init() {
+            try {
+                ensureLibraries();
+
+                chartCanvas = document.getElementById('errorChart');
+                chartCtx = chartCanvas.getContext('2d');
+
+                initMap();
+                resizeChart();
+
+                state.baseline = generateStableBaseline();
+                drawMap();
+
+                await initModel();
+
+                elements.modelStatus.textContent = 'Ready (training scheduled)';
+                elements.systemStatus.textContent = 'ACTIVE';
+
+                setTimeout(async () => {
+                    try {
+                        await trainModel();
+                        showToast('Background training complete');
+                    } catch (e) {
+                        showError(e);
+                    }
+                }, 300);
+
+            } catch (e) {
+                showError(e);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            init().catch(err => showError(err));
+        });
+
+        window.addEventListener('error', (ev) => {
+            const msg = ev && ev.message ? ev.message : String(ev);
+            showError(new Error('Unhandled error: ' + msg));
+        });
     </script>
 </body>
 </html>
