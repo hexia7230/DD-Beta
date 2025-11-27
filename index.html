@@ -3,113 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dementia Detection System Beta</title>
+    <title>DD-Beta</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
-            --primary: #0066cc;
-            --primary-dark: #004c99;
-            --success: #00a86b;
-            --danger: #dc3545;
-            --warning: #ff9500;
-            --bg: #f8f9fa;
-            --card: #ffffff;
-            --text: #1a1a1a;
-            --text-muted: #6c757d;
-            --border: #e0e0e0;
-            --shadow: rgba(0, 102, 204, 0.08);
+            --primary: #007AFF;
+            --primary-dark: #0051D5;
+            --success: #34C759;
+            --danger: #FF3B30;
+            --warning: #FF9500;
+            --bg: #F2F2F7;
+            --card: #FFFFFF;
+            --text: #000000;
+            --text-secondary: #3C3C43;
+            --text-tertiary: #8E8E93;
+            --separator: rgba(60, 60, 67, 0.36);
+            --fill-tertiary: rgba(118, 118, 128, 0.12);
+            --fill-quaternary: rgba(116, 116, 128, 0.08);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --card: #1C1C1E;
+                --text: #FFFFFF;
+                --text-secondary: #EBEBF5;
+                --text-tertiary: #8E8E93;
+                --separator: rgba(84, 84, 88, 0.65);
+                --fill-tertiary: rgba(118, 118, 128, 0.24);
+                --fill-quaternary: rgba(116, 116, 128, 0.16);
+            }
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
             background: var(--bg);
             color: var(--text);
-            line-height: 1.6;
+            line-height: 1.47059;
+            letter-spacing: -0.022em;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .app-container {
             max-width: 428px;
             margin: 0 auto;
-            background: var(--card);
+            background: var(--bg);
             min-height: 100vh;
-            box-shadow: 0 0 40px var(--shadow);
         }
 
-        /* Header */
+        /* Header - iOS Style */
         .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 16px 20px;
+            background: var(--card);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 0.5px solid var(--separator);
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 0 16px;
         }
 
-        .header-top {
+        .status-bar {
+            height: 44px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            font-size: 15px;
+            font-weight: 600;
         }
 
         .status-badge {
             display: flex;
             align-items: center;
             gap: 6px;
-            background: rgba(255, 255, 255, 0.15);
+            background: var(--fill-tertiary);
             padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
+            border-radius: 8px;
+            font-size: 13px;
             font-weight: 600;
+            color: var(--primary);
         }
 
         .pulse {
-            width: 6px;
-            height: 6px;
-            background: #00ff88;
+            width: 8px;
+            height: 8px;
+            background: var(--success);
             border-radius: 50%;
-            animation: pulse 2s infinite;
+            animation: pulse 2s ease-in-out infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.3); }
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.4; 
+                transform: scale(1.1);
+            }
         }
 
-        .header-title {
-            font-size: 20px;
+        .nav-title {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.41px;
+        }
+
+        /* Large Title */
+        .large-title {
+            padding: 0 16px 8px;
+            background: var(--card);
+        }
+
+        .large-title h1 {
+            font-size: 34px;
             font-weight: 700;
-            letter-spacing: -0.5px;
+            letter-spacing: 0.37px;
+            line-height: 1.2;
+            margin-bottom: 4px;
         }
 
-        .header-subtitle {
-            font-size: 12px;
-            opacity: 0.85;
-            font-weight: 500;
+        .large-title p {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            font-weight: 400;
         }
 
         /* Content */
         .content {
+            padding: 20px 16px 100px;
+        }
+
+        /* Card - iOS Style */
+        .card {
+            background: var(--card);
+            border-radius: 14px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 0 0.5px var(--separator);
+        }
+
+        .card-section {
             padding: 16px;
         }
 
-        .section {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 1px 3px var(--shadow);
+        .card-section + .card-section {
+            border-top: 0.5px solid var(--separator);
         }
 
         .section-header {
@@ -120,141 +172,185 @@
         }
 
         .section-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .section-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-        }
-
-        .section-meta {
-            font-size: 11px;
-            color: var(--text-muted);
+            font-size: 20px;
             font-weight: 600;
+            letter-spacing: -0.45px;
+            color: var(--text);
         }
 
-        /* Stats Grid */
+        .section-subtitle {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            font-weight: 400;
+        }
+
+        /* Stats Grid - iOS Style */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 12px;
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px 8px;
+            background: var(--fill-quaternary);
+            border-radius: 12px;
+            padding: 16px 12px;
             text-align: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stat-card:active {
+            transform: scale(0.96);
+            opacity: 0.8;
         }
 
         .stat-value {
-            font-size: 24px;
-            font-weight: 800;
+            font-size: 28px;
+            font-weight: 700;
             color: var(--primary);
             line-height: 1;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
         }
 
         .stat-label {
-            font-size: 10px;
-            color: var(--text-muted);
+            font-size: 11px;
+            color: var(--text-tertiary);
             text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
         }
 
-        /* Model Info */
-        .model-info {
-            background: #f0f7ff;
-            border: 1px solid #cce5ff;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 12px;
+        /* Progress Bar - iOS Style */
+        .progress-container {
+            margin-top: 16px;
         }
 
-        .model-info-row {
+        .progress-label {
             display: flex;
             justify-content: space-between;
-            font-size: 12px;
-            margin-bottom: 6px;
-        }
-
-        .model-info-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .model-info-label {
-            color: var(--text-muted);
+            font-size: 13px;
             font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
         }
 
-        .model-info-value {
+        .progress-track {
+            height: 4px;
+            background: var(--fill-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 2px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Info Rows - iOS Settings Style */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            font-size: 15px;
+        }
+
+        .info-row + .info-row {
+            border-top: 0.5px solid var(--separator);
+        }
+
+        .info-label {
             color: var(--text);
-            font-weight: 700;
+            font-weight: 400;
         }
 
-        /* Slider */
+        .info-value {
+            color: var(--text-tertiary);
+            font-weight: 400;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Slider - iOS Style */
         .slider-container {
-            margin: 12px 0;
+            padding-top: 8px;
         }
 
         .slider-label {
             display: flex;
             justify-content: space-between;
-            font-size: 12px;
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .slider-value {
             font-weight: 600;
-            color: var(--text);
-            margin-bottom: 8px;
+            color: var(--primary);
         }
 
         .slider {
             width: 100%;
-            height: 6px;
-            border-radius: 10px;
-            background: #e9ecef;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--fill-tertiary);
             outline: none;
             -webkit-appearance: none;
         }
 
         .slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: #FFFFFF;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 0.5px solid rgba(0, 0, 0, 0.04);
+            transition: transform 0.1s ease;
+        }
+
+        .slider::-webkit-slider-thumb:active {
+            transform: scale(1.1);
         }
 
         .slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: #FFFFFF;
             cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 0.5px solid rgba(0, 0, 0, 0.04);
         }
 
         /* Map */
         .map-container {
             height: 280px;
-            border-radius: 10px;
+            border-radius: 12px;
             overflow: hidden;
-            border: 1px solid var(--border);
             margin: 12px 0;
         }
 
@@ -265,21 +361,22 @@
 
         .map-legend {
             display: flex;
-            gap: 12px;
+            gap: 16px;
             justify-content: center;
-            margin-top: 8px;
-            font-size: 11px;
+            padding: 12px 0 0;
+            font-size: 13px;
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
+            color: var(--text-tertiary);
         }
 
         .legend-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
         }
 
@@ -295,72 +392,82 @@
             height: 100%;
         }
 
-        /* List */
-        .point-list {
-            max-height: 240px;
+        /* List - iOS Style */
+        .list-container {
+            max-height: 260px;
             overflow-y: auto;
-            margin-top: 12px;
+            margin: 12px -16px 0;
+            padding: 0 16px;
+            -webkit-overflow-scrolling: touch;
         }
 
-        .point-item {
-            background: #f8f9fa;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 8px;
+        .list-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            padding: 12px;
+            background: var(--fill-quaternary);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .point-number {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        .list-item:active {
+            transform: scale(0.98);
+            opacity: 0.8;
+        }
+
+        .list-number {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
             color: white;
-            border-radius: 6px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 600;
             flex-shrink: 0;
         }
 
-        .point-details {
+        .list-content {
             flex: 1;
-            font-size: 12px;
+            min-width: 0;
         }
 
-        .point-time {
-            font-weight: 700;
+        .list-title {
+            font-size: 15px;
+            font-weight: 600;
             color: var(--text);
             margin-bottom: 2px;
+            letter-spacing: -0.24px;
         }
 
-        .point-coords {
-            color: var(--text-muted);
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
+        .list-subtitle {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            font-weight: 400;
         }
 
-        /* Alert */
+        /* Alert - iOS Style */
         .alert {
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 16px;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
             display: none;
-            animation: slideIn 0.3s ease;
+            animation: alertSlideIn 0.4s cubic-bezier(0.36, 0, 0.66, -0.56);
         }
 
-        @keyframes slideIn {
+        @keyframes alertSlideIn {
             from {
                 opacity: 0;
-                transform: translateY(-10px);
+                transform: scale(0.9) translateY(-10px);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: scale(1) translateY(0);
             }
         }
 
@@ -369,226 +476,248 @@
         }
 
         .alert-success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
+            background: rgba(52, 199, 89, 0.1);
+            border: 1px solid rgba(52, 199, 89, 0.2);
         }
 
         .alert-danger {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid rgba(255, 59, 48, 0.2);
         }
 
         .alert-icon {
-            font-size: 32px;
+            font-size: 44px;
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+            animation: iconPop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes iconPop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .alert-title {
-            font-size: 16px;
-            font-weight: 700;
+            font-size: 20px;
+            font-weight: 600;
             text-align: center;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             color: var(--text);
+            letter-spacing: -0.45px;
         }
 
         .alert-message {
-            font-size: 13px;
+            font-size: 15px;
             text-align: center;
-            color: var(--text-muted);
-            line-height: 1.5;
+            color: var(--text-secondary);
+            line-height: 1.47059;
+            margin-bottom: 16px;
         }
 
         .alert-details {
-            background: rgba(255, 255, 255, 0.6);
-            border-radius: 6px;
-            padding: 10px;
-            margin-top: 10px;
-            font-size: 12px;
+            background: var(--card);
+            border-radius: 10px;
+            padding: 12px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
 
         .alert-detail-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 4px;
-        }
-
-        .alert-detail-row:last-child {
-            margin-bottom: 0;
-        }
-
-        /* Buttons */
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
+            padding: 8px 0;
             font-size: 15px;
-            font-weight: 700;
+        }
+
+        .alert-detail-row + .alert-detail-row {
+            border-top: 0.5px solid var(--separator);
+        }
+
+        .alert-detail-label {
+            color: var(--text-secondary);
+        }
+
+        .alert-detail-value {
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .alert-footer {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 0.5px solid var(--separator);
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-tertiary);
+        }
+
+        /* Buttons - iOS Style */
+        .button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: all 0.2s ease;
-            margin-bottom: 10px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 12px;
+            letter-spacing: -0.41px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .button:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .button-primary {
+            background: var(--primary);
             color: white;
-            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
         }
 
-        .btn-primary:active {
-            transform: translateY(1px);
-            box-shadow: 0 2px 6px rgba(0, 102, 204, 0.3);
+        .button-primary:active {
+            transform: scale(0.98);
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0);
         }
 
-        .btn-secondary {
-            background: white;
+        .button-secondary {
+            background: var(--fill-tertiary);
             color: var(--primary);
-            border: 2px solid var(--primary);
         }
 
-        .btn-secondary:active {
-            background: #f0f7ff;
+        .button-secondary:active {
+            transform: scale(0.98);
+            background: var(--fill-quaternary);
         }
 
-        .btn:disabled {
-            background: #e9ecef;
-            color: #adb5bd;
+        .button:disabled {
+            background: var(--fill-tertiary);
+            color: var(--text-tertiary);
             cursor: not-allowed;
-            box-shadow: none;
+            transform: none;
         }
 
-        .btn-spinner {
-            width: 16px;
-            height: 16px;
+        .button:disabled::before {
+            display: none;
+        }
+
+        .button-spinner {
+            width: 20px;
+            height: 20px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-top-color: white;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 0.6s linear infinite;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        /* Progress */
-        .progress-container {
-            margin: 12px 0;
-        }
-
-        .progress-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 8px;
-        }
-
-        .progress-bar {
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
-            border-radius: 10px;
-            transition: width 0.5s ease;
-            position: relative;
-        }
-
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        /* Toast */
+        /* Toast - iOS Style */
         .toast {
             position: fixed;
-            bottom: 20px;
+            bottom: 80px;
             left: 50%;
-            transform: translateX(-50%);
-            background: #1a1a1a;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(28, 28, 30, 0.95);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
             color: white;
             padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            display: none;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 400;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            opacity: 0;
             z-index: 1000;
             max-width: 90%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .toast.show {
-            display: block;
-            animation: toastIn 0.3s ease;
-        }
-
-        @keyframes toastIn {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
 
         /* Scrollbar */
-        .point-list::-webkit-scrollbar {
-            width: 6px;
+        .list-container::-webkit-scrollbar {
+            width: 4px;
         }
 
-        .point-list::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
+        .list-container::-webkit-scrollbar-track {
+            background: transparent;
         }
 
-        .point-list::-webkit-scrollbar-thumb {
-            background: #cbd5e0;
-            border-radius: 10px;
-        }
-
-        .point-list::-webkit-scrollbar-thumb:hover {
-            background: #a0aec0;
+        .list-container::-webkit-scrollbar-thumb {
+            background: var(--fill-tertiary);
+            border-radius: 2px;
         }
 
         /* Empty State */
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
+            padding: 48px 20px;
         }
 
         .empty-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-            opacity: 0.5;
+            font-size: 56px;
+            margin-bottom: 16px;
+            opacity: 0.3;
         }
 
         .empty-text {
-            font-size: 14px;
-            line-height: 1.6;
+            font-size: 15px;
+            line-height: 1.47059;
+            color: var(--text-tertiary);
+        }
+
+        /* Divider */
+        .divider {
+            height: 0.5px;
+            background: var(--separator);
+            margin: 20px 0;
+        }
+
+        /* Smooth Transitions */
+        * {
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Safe Area */
+        @supports (padding: max(0px)) {
+            .app-container {
+                padding-bottom: max(20px, env(safe-area-inset-bottom));
+            }
         }
     </style>
 </head>
@@ -596,16 +725,20 @@
     <div class="app-container">
         <!-- Header -->
         <div class="header">
-            <div class="header-top">
-                <div>
-                    <div class="header-title">DD-Beta</div>
-                    <div class="header-subtitle">Neural Network Analysis System</div>
-                </div>
+            <div class="status-bar">
                 <div class="status-badge">
                     <span class="pulse"></span>
                     <span id="systemStatus">ACTIVE</span>
                 </div>
+                <div class="nav-title">Neural Detection</div>
+                <div style="width: 80px;"></div>
             </div>
+        </div>
+
+        <!-- Large Title -->
+        <div class="large-title">
+            <h1>Dementia Detection</h1>
+            <p>AI-Powered Behavioral Analysis</p>
         </div>
 
         <!-- Content -->
@@ -614,138 +747,146 @@
             <div class="alert" id="alertBox">
                 <div class="alert-icon" id="alertIcon">🤖</div>
                 <div class="alert-title" id="alertTitle">System Ready</div>
-                <div class="alert-message" id="alertMessage">Neural network initialized</div>
+                <div class="alert-message" id="alertMessage">Neural network initialized and ready for analysis</div>
                 <div class="alert-details" id="alertDetails"></div>
             </div>
 
-            <!-- Statistics -->
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-title">
-                        <div class="section-icon">📊</div>
-                        <span>System Statistics</span>
+            <!-- Statistics Card -->
+            <div class="card">
+                <div class="card-section">
+                    <div class="section-header">
+                        <div>
+                            <div class="section-title">Statistics</div>
+                            <div class="section-subtitle">System performance metrics</div>
+                        </div>
                     </div>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalRuns">0</div>
-                        <div class="stat-label">Analyses</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalRuns">0</div>
+                            <div class="stat-label">Analyses</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="accuracyValue">0%</div>
+                            <div class="stat-label">Accuracy</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="anomalyTotal">0</div>
+                            <div class="stat-label">Anomalies</div>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="accuracyValue">0%</div>
-                        <div class="stat-label">Accuracy</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="anomalyTotal">0</div>
-                        <div class="stat-label">Anomalies</div>
+
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>Training Progress</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="progress-container">
-                    <div class="progress-label">
-                        <span>Training Progress</span>
-                        <span id="progressPercent">0%</span>
+                <div class="card-section">
+                    <div class="info-row">
+                        <span class="info-label">Model Status</span>
+                        <span class="info-value" id="modelStatus">Initializing</span>
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                    <div class="info-row">
+                        <span class="info-label">Training Epochs</span>
+                        <span class="info-value" id="epochCount">0</span>
                     </div>
-                </div>
-
-                <div class="model-info">
-                    <div class="model-info-row">
-                        <span class="model-info-label">Model Status</span>
-                        <span class="model-info-value" id="modelStatus">Initializing</span>
-                    </div>
-                    <div class="model-info-row">
-                        <span class="model-info-label">Training Epochs</span>
-                        <span class="model-info-value" id="epochCount">0</span>
-                    </div>
-                    <div class="model-info-row">
-                        <span class="model-info-label">Threshold</span>
-                        <span class="model-info-value" id="thresholdValue">—</span>
+                    <div class="info-row">
+                        <span class="info-label">Threshold</span>
+                        <span class="info-value" id="thresholdValue">—</span>
                     </div>
                 </div>
 
-                <div class="slider-container">
-                    <div class="slider-label">
-                        <span>Learning Intensity</span>
-                        <span id="sliderValue">5</span>
-                    </div>
-                    <input type="range" min="1" max="10" value="5" class="slider" id="learningSlider">
-                </div>
-            </div>
-
-            <!-- Map -->
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-title">
-                        <div class="section-icon">🗺️</div>
-                        <span>Movement Patterns</span>
-                    </div>
-                </div>
-                <div class="map-container">
-                    <div id="map"></div>
-                </div>
-                <div class="map-legend">
-                    <div class="legend-item">
-                        <span class="legend-dot" style="background: #0066cc;"></span>
-                        <span>Baseline</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-dot" style="background: #00a86b;"></span>
-                        <span>Today</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-dot" style="background: #dc3545;"></span>
-                        <span>Anomaly</span>
+                <div class="card-section">
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Learning Intensity</span>
+                            <span class="slider-value" id="sliderValue">5</span>
+                        </div>
+                        <input type="range" min="1" max="10" value="5" class="slider" id="learningSlider">
                     </div>
                 </div>
             </div>
 
-            <!-- Error Chart -->
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-title">
-                        <div class="section-icon">📈</div>
-                        <span>Reconstruction Error</span>
+            <!-- Map Card -->
+            <div class="card">
+                <div class="card-section">
+                    <div class="section-header">
+                        <div>
+                            <div class="section-title">Movement Patterns</div>
+                            <div class="section-subtitle">GPS trajectory analysis</div>
+                        </div>
                     </div>
-                    <div class="section-meta" id="chartDays">0 days</div>
-                </div>
-                <div class="chart-container">
-                    <canvas id="errorChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Today's Points -->
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-title">
-                        <div class="section-icon">📍</div>
-                        <span>Today's Movement</span>
+                    <div class="map-container">
+                        <div id="map"></div>
                     </div>
-                    <div class="section-meta" id="pointCount">0 points</div>
-                </div>
-                <div class="point-list" id="pointList">
-                    <div class="empty-state">
-                        <div class="empty-icon">📍</div>
-                        <div class="empty-text">No data yet<br>Run simulation to begin</div>
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot" style="background: #007AFF;"></span>
+                            <span>Baseline</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot" style="background: #34C759;"></span>
+                            <span>Today</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot" style="background: #FF3B30;"></span>
+                            <span>Anomaly</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Actions -->
-            <button class="btn btn-primary" id="simulateBtn">
-                <span>🚀</span>
+            <!-- Chart Card -->
+            <div class="card">
+                <div class="card-section">
+                    <div class="section-header">
+                        <div>
+                            <div class="section-title">Reconstruction Error</div>
+                            <div class="section-subtitle" id="chartDays">0 days tracked</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="errorChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Points List Card -->
+            <div class="card">
+                <div class="card-section">
+                    <div class="section-header">
+                        <div>
+                            <div class="section-title">Today's Movement</div>
+                            <div class="section-subtitle" id="pointCount">0 points</div>
+                        </div>
+                    </div>
+                    <div class="list-container" id="pointList">
+                        <div class="empty-state">
+                            <div class="empty-icon">📍</div>
+                            <div class="empty-text">No movement data yet<br>Run simulation to begin tracking</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <button class="button button-primary" id="simulateBtn">
+                <span></span>
                 <span>Start Simulation</span>
             </button>
 
-            <button class="btn btn-secondary" id="retrainBtn">
-                <span>🔄</span>
+            <button class="button button-secondary" id="retrainBtn">
+                <span></span>
                 <span>Retrain Model</span>
             </button>
 
-            <button class="btn btn-secondary" id="newBaselineBtn">
-                <span>🆕</span>
+            <button class="button button-secondary" id="newBaselineBtn">
+                <span></span>
                 <span>Generate New Baseline</span>
             </button>
         </div>
@@ -1082,14 +1223,13 @@
         async function trainModel() {
             if (!state.model) await initModel();
 
-            elements.modelStatus.textContent = 'Training...';
+            elements.modelStatus.textContent = 'Training';
             elements.systemStatus.textContent = 'TRAINING';
 
             if (!state.baseline || state.baseline.length !== CONFIG.TARGET_POINTS) {
                 throw new Error('Baseline must be ready');
             }
 
-            // Augmented dataset
             const augCount = Math.max(6, state.learningIntensity);
             const xs = [];
 
@@ -1218,7 +1358,7 @@
         function updateStatistics() {
             elements.totalRuns.textContent = state.totalRuns;
             elements.anomalyTotal.textContent = state.anomalyCount;
-            elements.chartDays.textContent = state.errorHistory.length + ' days';
+            elements.chartDays.textContent = state.errorHistory.length + ' days tracked';
         }
 
         // Initialize Map
@@ -1243,9 +1383,9 @@
 
             if (state.baseline.length) {
                 const coords = state.baseline.map(p => [p.lat, p.lng]);
-                L.polyline(coords, { color: '#0066cc', weight: 4 }).addTo(baselineLayer);
+                L.polyline(coords, { color: '#007AFF', weight: 4 }).addTo(baselineLayer);
                 state.baseline.forEach((p, i) => {
-                    L.circleMarker([p.lat, p.lng], { radius: 4, color: '#0066cc' })
+                    L.circleMarker([p.lat, p.lng], { radius: 4, color: '#007AFF' })
                         .bindTooltip(`${i + 1} ${p.label}`)
                         .addTo(baselineLayer);
                 });
@@ -1260,14 +1400,14 @@
                     if (dist > 0.5) anomalies.push(i);
                 }
 
-                L.polyline(coords, { color: '#00a86b', weight: 3, dashArray: '6 4' }).addTo(todayLayer);
+                L.polyline(coords, { color: '#34C759', weight: 3, dashArray: '6 4' }).addTo(todayLayer);
 
                 state.today.forEach((p, i) => {
                     if (anomalies.includes(i)) {
-                        L.circleMarker([p.lat, p.lng], { radius: 6, color: '#dc3545', fillOpacity: 0.9 })
+                        L.circleMarker([p.lat, p.lng], { radius: 6, color: '#FF3B30', fillOpacity: 0.9 })
                             .addTo(anomalyLayer);
                     } else {
-                        L.circleMarker([p.lat, p.lng], { radius: 4, color: '#00a86b', fillOpacity: 0.9 })
+                        L.circleMarker([p.lat, p.lng], { radius: 4, color: '#34C759', fillOpacity: 0.9 })
                             .addTo(todayLayer);
                     }
                 });
@@ -1295,8 +1435,8 @@
             chartCtx.clearRect(0, 0, width, height);
 
             if (!state.errorHistory.length) {
-                chartCtx.fillStyle = '#6c757d';
-                chartCtx.font = '14px sans-serif';
+                chartCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-tertiary');
+                chartCtx.font = '15px -apple-system';
                 chartCtx.textAlign = 'center';
                 chartCtx.fillText('No data yet', width / 2, height / 2);
                 return;
@@ -1308,8 +1448,8 @@
             const maxVal = Math.max(...state.errorHistory.map(d => d.error), state.threshold || 1e-6);
 
             // Grid
-            chartCtx.strokeStyle = '#e9ecef';
-            chartCtx.lineWidth = 1;
+            chartCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--separator');
+            chartCtx.lineWidth = 0.5;
             for (let i = 0; i <= 4; i++) {
                 const y = padding + (graphH / 4) * i;
                 chartCtx.beginPath();
@@ -1317,8 +1457,8 @@
                 chartCtx.lineTo(padding + graphW, y);
                 chartCtx.stroke();
 
-                chartCtx.fillStyle = '#adb5bd';
-                chartCtx.font = '10px sans-serif';
+                chartCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-tertiary');
+                chartCtx.font = '11px -apple-system';
                 chartCtx.textAlign = 'right';
                 chartCtx.fillText((maxVal * (4 - i) / 4 * 100000).toFixed(1), padding - 8, y + 4);
             }
@@ -1326,8 +1466,8 @@
             // Threshold
             if (state.threshold) {
                 const thrY = padding + graphH - (state.threshold / maxVal) * graphH;
-                chartCtx.setLineDash([6, 4]);
-                chartCtx.strokeStyle = '#ff9500';
+                chartCtx.setLineDash([4, 4]);
+                chartCtx.strokeStyle = '#FF9500';
                 chartCtx.lineWidth = 2;
                 chartCtx.beginPath();
                 chartCtx.moveTo(padding, thrY);
@@ -1352,15 +1492,17 @@
                 chartCtx.closePath();
 
                 const gradient = chartCtx.createLinearGradient(0, padding, 0, padding + graphH);
-                gradient.addColorStop(0, 'rgba(0, 102, 204, 0.15)');
-                gradient.addColorStop(1, 'rgba(0, 102, 204, 0.02)');
+                gradient.addColorStop(0, 'rgba(0, 122, 255, 0.2)');
+                gradient.addColorStop(1, 'rgba(0, 122, 255, 0.02)');
                 chartCtx.fillStyle = gradient;
                 chartCtx.fill();
             }
 
             // Line
-            chartCtx.strokeStyle = '#0066cc';
-            chartCtx.lineWidth = 2;
+            chartCtx.strokeStyle = '#007AFF';
+            chartCtx.lineWidth = 2.5;
+            chartCtx.lineCap = 'round';
+            chartCtx.lineJoin = 'round';
             chartCtx.beginPath();
             pts.forEach((p, i) => {
                 if (i === 0) chartCtx.moveTo(p.x, p.y);
@@ -1372,9 +1514,9 @@
             pts.forEach(p => {
                 chartCtx.beginPath();
                 chartCtx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-                chartCtx.fillStyle = p.isAnomaly ? '#dc3545' : '#00a86b';
+                chartCtx.fillStyle = p.isAnomaly ? '#FF3B30' : '#34C759';
                 chartCtx.fill();
-                chartCtx.strokeStyle = 'white';
+                chartCtx.strokeStyle = '#FFFFFF';
                 chartCtx.lineWidth = 2;
                 chartCtx.stroke();
             });
@@ -1387,12 +1529,12 @@
 
             state.today.forEach((p, i) => {
                 const item = document.createElement('div');
-                item.className = 'point-item';
+                item.className = 'list-item';
                 item.innerHTML = `
-                    <div class="point-number">${i + 1}</div>
-                    <div class="point-details">
-                        <div class="point-time">🕐 ${p.time} ${p.label ? '• ' + p.label : ''}</div>
-                        <div class="point-coords">📍 ${p.lat}, ${p.lng}</div>
+                    <div class="list-number">${i + 1}</div>
+                    <div class="list-content">
+                        <div class="list-title">${p.time} ${p.label ? '• ' + p.label : ''}</div>
+                        <div class="list-subtitle">${p.lat}, ${p.lng}</div>
                     </div>
                 `;
                 elements.pointList.appendChild(item);
@@ -1407,45 +1549,45 @@
             if (result.isAnomaly) {
                 elements.alertBox.classList.add('alert-danger');
                 elements.alertIcon.textContent = '⚠️';
-                elements.alertTitle.textContent = 'ANOMALY DETECTED';
+                elements.alertTitle.textContent = 'Anomaly Detected';
                 elements.alertMessage.textContent = result.explanation;
                 elements.alertDetails.innerHTML = `
                     <div class="alert-detail-row">
-                        <span>Reconstruction Error:</span>
-                        <span style="font-weight: 700; color: #dc3545;">${(result.score * 100000).toFixed(2)}</span>
+                        <span class="alert-detail-label">Reconstruction Error</span>
+                        <span class="alert-detail-value" style="color: #FF3B30;">${(result.score * 100000).toFixed(2)}</span>
                     </div>
                     <div class="alert-detail-row">
-                        <span>Threshold:</span>
-                        <span style="font-weight: 700;">${(result.threshold * 100000).toFixed(2)}</span>
+                        <span class="alert-detail-label">Threshold</span>
+                        <span class="alert-detail-value">${(result.threshold * 100000).toFixed(2)}</span>
                     </div>
                     <div class="alert-detail-row">
-                        <span>Path Deviation:</span>
-                        <span style="font-weight: 700;">${result.pathDeviation.toFixed(2)} km</span>
+                        <span class="alert-detail-label">Path Deviation</span>
+                        <span class="alert-detail-value">${result.pathDeviation.toFixed(2)} km</span>
                     </div>
-                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1); text-align: center; font-size: 11px;">
-                        🔔 Family notification via LINE API
+                    <div class="alert-footer">
+                        Family notification would be sent via LINE API
                     </div>
                 `;
             } else {
                 elements.alertBox.classList.add('alert-success');
-                elements.alertIcon.textContent = '✅';
-                elements.alertTitle.textContent = 'BEHAVIOR NORMAL';
+                elements.alertIcon.textContent = '✓';
+                elements.alertTitle.textContent = 'Normal Behavior';
                 elements.alertMessage.textContent = result.explanation;
                 elements.alertDetails.innerHTML = `
                     <div class="alert-detail-row">
-                        <span>Reconstruction Error:</span>
-                        <span style="font-weight: 700; color: #00a86b;">${(result.score * 100000).toFixed(2)}</span>
+                        <span class="alert-detail-label">Reconstruction Error</span>
+                        <span class="alert-detail-value" style="color: #34C759;">${(result.score * 100000).toFixed(2)}</span>
                     </div>
                     <div class="alert-detail-row">
-                        <span>Threshold:</span>
-                        <span style="font-weight: 700;">${(result.threshold * 100000).toFixed(2)}</span>
+                        <span class="alert-detail-label">Threshold</span>
+                        <span class="alert-detail-value">${(result.threshold * 100000).toFixed(2)}</span>
                     </div>
                     <div class="alert-detail-row">
-                        <span>Path Deviation:</span>
-                        <span style="font-weight: 700;">${result.pathDeviation.toFixed(2)} km</span>
+                        <span class="alert-detail-label">Path Deviation</span>
+                        <span class="alert-detail-value">${result.pathDeviation.toFixed(2)} km</span>
                     </div>
-                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1); text-align: center; font-size: 11px;">
-                        ✓ No alerts necessary
+                    <div class="alert-footer">
+                        No alerts necessary
                     </div>
                 `;
             }
@@ -1455,7 +1597,7 @@
         async function runSimulation() {
             try {
                 elements.simulateBtn.disabled = true;
-                elements.simulateBtn.innerHTML = '<div class="btn-spinner"></div><span>Analyzing...</span>';
+                elements.simulateBtn.innerHTML = '<div class="button-spinner"></div><span>Analyzing...</span>';
                 elements.systemStatus.textContent = 'ANALYZING';
 
                 if (!state.baseline.length) {
@@ -1464,7 +1606,7 @@
                 }
 
                 if (!state.isTrained) {
-                    showToast('Training model in background...');
+                    showToast('Training model...');
                     await trainModel();
                 }
 
@@ -1492,12 +1634,12 @@
                     if (state.today.length !== state.baseline.length) {
                         explanation = 'Unusual number of stops detected - possible wandering behavior';
                     } else if (pathDeviation > 5) {
-                        explanation = 'Significant deviation from normal route - unexpected locations visited';
+                        explanation = 'Significant deviation from normal route';
                     } else {
-                        explanation = 'Pattern reconstruction error exceeds threshold - behavioral anomaly detected';
+                        explanation = 'Pattern reconstruction error exceeds threshold';
                     }
                 } else {
-                    explanation = 'Movement patterns consistent with learned baseline routine';
+                    explanation = 'Movement patterns consistent with baseline routine';
                 }
 
                 state.totalRuns++;
@@ -1510,7 +1652,7 @@
                 updateStatistics();
                 drawChart();
 
-                showToast(isAnomaly ? 'Anomaly detected!' : 'Pattern normal');
+                showToast(isAnomaly ? '⚠️ Anomaly detected' : '✓ Pattern normal');
 
             } catch (e) {
                 showError(e);
@@ -1525,12 +1667,12 @@
         async function retrainModel() {
             try {
                 elements.retrainBtn.disabled = true;
-                elements.retrainBtn.innerHTML = '<div class="btn-spinner"></div><span>Retraining...</span>';
+                elements.retrainBtn.innerHTML = '<div class="button-spinner"></div><span>Retraining...</span>';
 
                 await initModel();
                 await trainModel();
 
-                showToast('Model retrained successfully');
+                showToast('✓ Model retrained');
             } catch (e) {
                 showError(e);
             } finally {
@@ -1560,39 +1702,18 @@
                 drawMap();
                 drawChart();
 
-                showToast('New baseline generated and model trained');
+                showToast('✓ New baseline generated');
             } catch (e) {
                 showError(e);
-            } finally {
-                elements.newBaselineBtn.disabled = false;
+            } finally {elements.newBaselineBtn.disabled = false;
                 elements.systemStatus.textContent = 'ACTIVE';
             }
         }
 
         // Event Listeners
-        elements.simulateBtn.addEventListener('click', async () => {
-            try {
-                await runSimulation();
-            } catch (e) {
-                showError(e);
-            }
-        });
-
-        elements.retrainBtn.addEventListener('click', async () => {
-            try {
-                await retrainModel();
-            } catch (e) {
-                showError(e);
-            }
-        });
-
-        elements.newBaselineBtn.addEventListener('click', async () => {
-            try {
-                await generateNewBaseline();
-            } catch (e) {
-                showError(e);
-            }
-        });
+        elements.simulateBtn.addEventListener('click', runSimulation);
+        elements.retrainBtn.addEventListener('click', retrainModel);
+        elements.newBaselineBtn.addEventListener('click', generateNewBaseline);
 
         elements.learningSlider.addEventListener('input', (e) => {
             state.learningIntensity = parseInt(e.target.value);
@@ -1620,13 +1741,13 @@
 
                 await initModel();
 
-                elements.modelStatus.textContent = 'Ready (training scheduled)';
+                elements.modelStatus.textContent = 'Ready';
                 elements.systemStatus.textContent = 'ACTIVE';
 
                 setTimeout(async () => {
                     try {
                         await trainModel();
-                        showToast('Background training complete');
+                        showToast('✓ Background training complete');
                     } catch (e) {
                         showError(e);
                     }
